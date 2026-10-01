@@ -28,13 +28,14 @@ export interface DashboardStats {
   threatsDetected: number;
   riskRate: number;       // เปอร์เซ็นต์
   activeUsers: number;
+  suspiciousSenders: number; // จำนวน user ที่ส่งข้อความน่าสงสัย
 }
 
 /** ข้อมูลกราฟแนวโน้ม */
 export interface TrendDataPoint {
   date: string;
-  threats: number;
-  scanned: number;
+  totalMessages: number;      // จำนวนข้อความทั้งหมด
+  suspiciousMessages: number;  // จำนวนข้อความที่น่าสงสัย
 }
 
 /** รายการเมนู Sidebar */
@@ -58,3 +59,29 @@ export interface LineGroup {
 
 /** Sort direction สำหรับตาราง */
 export type SortDirection = 'asc' | 'desc';
+
+/** Label สำหรับ Dataset */
+export type DatasetLabel = 'spam' | 'ham';
+
+/** ประเภทข้อมูล Dataset */
+export type DatasetCategory = 'หลอกลงทุนทางการเงิน' | 'หลอกลวงผลิต' | 'ทั่วไป' | 'งาน/อาชีพ' | 'หลอกลวงทุน' | 'แจ้งเตือนระบบ' | string;
+
+/** แหล่งข้อมูล Dataset */
+export type DatasetSource = 'LINE' | 'SMS' | 'Facebook' | string;
+
+/** รายการข้อมูลใน Dataset */
+export interface DatasetEntry {
+  id: string;
+  message: string;
+  label: DatasetLabel;
+  category: string;
+  source: DatasetSource;
+  confirmed: boolean;
+}
+
+/** สถิติ Dataset */
+export interface DatasetStats {
+  total: number;
+  spam: number;
+  ham: number;
+}

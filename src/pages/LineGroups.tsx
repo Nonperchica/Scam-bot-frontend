@@ -34,12 +34,6 @@ export default function LineGroups() {
 
   return (
     <div className="overview-page">
-      {/* Page header — centered */}
-      <div className="page-header page-header--centered">
-        <h1 className="page-title">กลุ่ม LINE ที่เชื่อมต่อ</h1>
-        <p className="page-subtitle">รายการกลุ่ม LINE ทั้งหมดที่แชทบอทกำลังเฝ้าระวัง</p>
-      </div>
-
       {/* LINE Groups Grid */}
       <div className="line-groups-grid" style={{ padding: 0 }}>
         {lineGroups.map((group, index) => (

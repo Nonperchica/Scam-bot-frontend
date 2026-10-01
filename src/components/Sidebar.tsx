@@ -3,12 +3,13 @@
 // =============================================
 
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ShieldAlert, MessagesSquare } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, MessagesSquare, Database } from 'lucide-react';
 
 const menuItems = [
-  { label: 'ภาพรวม', path: '/', icon: LayoutDashboard },
-  { label: 'กลุ่มไลน์ที่เชื่อมต่อ', path: '/line-groups', icon: MessagesSquare },
-  { label: 'ประวัติภัยคุกคาม', path: '/threat-logs', icon: ShieldAlert },
+  { label: 'Overview', path: '/', icon: LayoutDashboard },
+  { label: 'Connected LINE groups', path: '/line-groups', icon: MessagesSquare },
+  { label: 'Threat History', path: '/threat-logs', icon: ShieldAlert },
+  { label: 'dataset', path: '/dataset', icon: Database },
 ];
 
 export default function Sidebar() {
@@ -16,13 +17,13 @@ export default function Sidebar() {
     <aside className="sidebar">
       {/* Logo */}
       <div className="sidebar-logo">
-        <img
-          src="/logo.png"
-          alt="Senior Guard Logo"
-          className="sidebar-logo-img"
-        />
+        <div className="sidebar-logo-shield">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </div>
         <div className="sidebar-logo-text">
-          <span className="sidebar-logo-title">Senior Guard</span>
+          <span className="sidebar-logo-title">Dashboard</span>
           <span className="sidebar-logo-subtitle">Scam Detection</span>
         </div>
       </div>

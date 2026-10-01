@@ -50,12 +50,6 @@ export default function ThreatLogs() {
 
   return (
     <div className="threat-logs-page">
-      {/* Page header */}
-      <div className="page-header">
-        <h1 className="page-title">ประวัติภัยคุกคาม</h1>
-        <p className="page-subtitle">รายการข้อความทั้งหมดที่ระบบตรวจจับว่าอาจเป็นสแกม</p>
-      </div>
-
       {/* Toolbar */}
       <div className="toolbar">
         {/* Search */}

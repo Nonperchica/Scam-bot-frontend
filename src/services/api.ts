@@ -2,7 +2,7 @@
 // Senior Guard — API Service (Mock Data)
 // =============================================
 
-import type { ThreatLog, DashboardStats, TrendDataPoint, LineGroup } from '../types';
+import type { ThreatLog, DashboardStats, TrendDataPoint, LineGroup, DatasetEntry, DatasetStats } from '../types';
 
 // =============================================
 // Mock Data — จะเปลี่ยนเป็น API จริงภายหลัง
@@ -134,16 +134,17 @@ const mockStats: DashboardStats = {
   threatsDetected: 342,
   riskRate: 2.16,
   activeUsers: 1253,
+  suspiciousSenders: 87,
 };
 
 const mockTrendData: TrendDataPoint[] = [
-  { date: '14 ส.ค.', threats: 28, scanned: 1820 },
-  { date: '15 ส.ค.', threats: 35, scanned: 2100 },
-  { date: '16 ส.ค.', threats: 42, scanned: 2350 },
-  { date: '17 ส.ค.', threats: 38, scanned: 2200 },
-  { date: '18 ส.ค.', threats: 55, scanned: 2580 },
-  { date: '19 ส.ค.', threats: 48, scanned: 2410 },
-  { date: '20 ส.ค.', threats: 62, scanned: 2750 },
+  { date: '14 ส.ค.', totalMessages: 1820, suspiciousMessages: 28 },
+  { date: '15 ส.ค.', totalMessages: 2100, suspiciousMessages: 35 },
+  { date: '16 ส.ค.', totalMessages: 2350, suspiciousMessages: 42 },
+  { date: '17 ส.ค.', totalMessages: 2200, suspiciousMessages: 38 },
+  { date: '18 ส.ค.', totalMessages: 2580, suspiciousMessages: 55 },
+  { date: '19 ส.ค.', totalMessages: 2410, suspiciousMessages: 48 },
+  { date: '20 ส.ค.', totalMessages: 2750, suspiciousMessages: 62 },
 ];
 
 // =============================================
@@ -242,5 +243,156 @@ export async function fetchLineGroups(): Promise<LineGroup[]> {
   // return res.json();
   return new Promise((resolve) => {
     setTimeout(() => resolve(mockLineGroups), 450);
+  });
+}
+
+/** ดึงข้อมูลกลุ่ม LINE ตาม ID */
+export async function fetchGroupById(groupId: string): Promise<LineGroup | undefined> {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(mockLineGroups.find((g) => g.id === groupId)), 300);
+  });
+}
+
+// =============================================
+// Mock Data — แนวโน้มรายกลุ่ม
+// =============================================
+
+const mockGroupTrendData: Record<string, TrendDataPoint[]> = {
+  'G-001': [
+    { date: '14 ส.ค.', totalMessages: 620, suspiciousMessages: 5 },
+    { date: '15 ส.ค.', totalMessages: 680, suspiciousMessages: 7 },
+    { date: '16 ส.ค.', totalMessages: 710, suspiciousMessages: 4 },
+    { date: '17 ส.ค.', totalMessages: 590, suspiciousMessages: 3 },
+    { date: '18 ส.ค.', totalMessages: 750, suspiciousMessages: 8 },
+    { date: '19 ส.ค.', totalMessages: 640, suspiciousMessages: 6 },
+    { date: '20 ส.ค.', totalMessages: 800, suspiciousMessages: 10 },
+  ],
+  'G-002': [
+    { date: '14 ส.ค.', totalMessages: 380, suspiciousMessages: 3 },
+    { date: '15 ส.ค.', totalMessages: 410, suspiciousMessages: 2 },
+    { date: '16 ส.ค.', totalMessages: 450, suspiciousMessages: 5 },
+    { date: '17 ส.ค.', totalMessages: 420, suspiciousMessages: 4 },
+    { date: '18 ส.ค.', totalMessages: 390, suspiciousMessages: 2 },
+    { date: '19 ส.ค.', totalMessages: 470, suspiciousMessages: 6 },
+    { date: '20 ส.ค.', totalMessages: 500, suspiciousMessages: 3 },
+  ],
+  'G-003': [
+    { date: '14 ส.ค.', totalMessages: 720, suspiciousMessages: 8 },
+    { date: '15 ส.ค.', totalMessages: 780, suspiciousMessages: 10 },
+    { date: '16 ส.ค.', totalMessages: 810, suspiciousMessages: 12 },
+    { date: '17 ส.ค.', totalMessages: 690, suspiciousMessages: 6 },
+    { date: '18 ส.ค.', totalMessages: 850, suspiciousMessages: 14 },
+    { date: '19 ส.ค.', totalMessages: 770, suspiciousMessages: 9 },
+    { date: '20 ส.ค.', totalMessages: 900, suspiciousMessages: 11 },
+  ],
+  'G-004': [
+    { date: '14 ส.ค.', totalMessages: 180, suspiciousMessages: 1 },
+    { date: '15 ส.ค.', totalMessages: 200, suspiciousMessages: 2 },
+    { date: '16 ส.ค.', totalMessages: 190, suspiciousMessages: 1 },
+    { date: '17 ส.ค.', totalMessages: 210, suspiciousMessages: 3 },
+    { date: '18 ส.ค.', totalMessages: 175, suspiciousMessages: 1 },
+    { date: '19 ส.ค.', totalMessages: 220, suspiciousMessages: 2 },
+    { date: '20 ส.ค.', totalMessages: 230, suspiciousMessages: 2 },
+  ],
+  'G-005': [
+    { date: '14 ส.ค.', totalMessages: 110, suspiciousMessages: 0 },
+    { date: '15 ส.ค.', totalMessages: 130, suspiciousMessages: 1 },
+    { date: '16 ส.ค.', totalMessages: 120, suspiciousMessages: 0 },
+    { date: '17 ส.ค.', totalMessages: 140, suspiciousMessages: 2 },
+    { date: '18 ส.ค.', totalMessages: 100, suspiciousMessages: 0 },
+    { date: '19 ส.ค.', totalMessages: 125, suspiciousMessages: 1 },
+    { date: '20 ส.ค.', totalMessages: 135, suspiciousMessages: 0 },
+  ],
+};
+
+/** ดึงข้อมูลแนวโน้มของกลุ่ม LINE ตาม ID */
+export async function fetchGroupTrendData(groupId: string): Promise<TrendDataPoint[]> {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(mockGroupTrendData[groupId] || []), 400);
+  });
+}
+
+/** ดึง Threat Logs สำหรับกลุ่มเฉพาะ */
+export async function fetchGroupThreatLogs(groupName: string): Promise<ThreatLog[]> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const filtered = mockThreatLogs.filter((log) => log.lineGroupName === groupName);
+      resolve(filtered);
+    }, 400);
+  });
+}
+
+// =============================================
+// Mock Data — Dataset
+// =============================================
+
+const mockDatasetEntries: DatasetEntry[] = [
+  {
+    id: 'DS-0001',
+    message: 'คุณได้รับสิทธิ์เงินคืนยอดเงินนี้ กดลิงก์เพื่อยืนยันข้อมูลทันที',
+    label: 'spam',
+    category: 'หลอกลวงทางการเงิน',
+    source: 'LINE',
+    confirmed: true,
+  },
+  {
+    id: 'DS-0002',
+    message: 'สวัสดีค่ะ นัดหมายประชุมกัน พรุ่งนี้เวลา 10:00 น. ที่ห้อง A1',
+    label: 'ham',
+    category: 'ทั่วไป',
+    source: 'LINE',
+    confirmed: true,
+  },
+  {
+    id: 'DS-0003',
+    message: 'ส่งมอบคุณลูกค้ารับ กรุณาแข็งบัตรกำนัลใน 24 ชม.',
+    label: 'spam',
+    category: 'หลอกลวงผลิต',
+    source: 'SMS',
+    confirmed: true,
+  },
+  {
+    id: 'DS-0004',
+    message: 'เอกสารรายงานประจำเดือน ถามไฟล์ที่แนบมาครับ',
+    label: 'ham',
+    category: 'งาน/อาชีพ',
+    source: 'อีเมล',
+    confirmed: true,
+  },
+  {
+    id: 'DS-0005',
+    message: 'ลงทุนกรับโป รับผลตอบแทนสูงถึง 100% ภายใน 7 วัน',
+    label: 'spam',
+    category: 'หลอกลวงทุน',
+    source: 'Facebook',
+    confirmed: true,
+  },
+  {
+    id: 'DS-0006',
+    message: 'ตัวแสตร์การปรับปรุงระบบ ในวันเสาร์ เวลา 02:00-04:00 น.',
+    label: 'ham',
+    category: 'แจ้งเตือนระบบ',
+    source: 'LINE',
+    confirmed: true,
+  },
+];
+
+const mockDatasetStats: DatasetStats = {
+  total: 2971,
+  spam: 1486,
+  ham: 1485,
+};
+
+/** ดึงรายการข้อมูล Dataset */
+export async function fetchDatasetEntries(): Promise<DatasetEntry[]> {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(mockDatasetEntries), 400);
+  });
+}
+
+/** ดึงสถิติ Dataset */
+export async function fetchDatasetStats(): Promise<DatasetStats> {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(mockDatasetStats), 300);
   });
 }

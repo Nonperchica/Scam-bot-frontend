@@ -2,6 +2,7 @@
 // Senior Guard — LineGroupCard Component
 // =============================================
 
+import { useNavigate } from 'react-router-dom';
 import { Users, ShieldAlert, ScanSearch, Calendar } from 'lucide-react';
 import type { LineGroup } from '../types';
 import { formatNumber } from '../utils/formatters';
@@ -12,6 +13,7 @@ interface LineGroupCardProps {
 }
 
 export default function LineGroupCard({ group, index }: LineGroupCardProps) {
+  const navigate = useNavigate();
   const joinDate = new Date(group.joinedAt).toLocaleDateString('th-TH', {
     day: 'numeric',
     month: 'short',
@@ -20,8 +22,12 @@ export default function LineGroupCard({ group, index }: LineGroupCardProps) {
 
   return (
     <div
-      className="line-group-card"
+      className="line-group-card line-group-card--clickable"
       style={{ animationDelay: `${index * 80}ms` }}
+      onClick={() => navigate(`/line-groups/${group.id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/line-groups/${group.id}`); }}
     >
       {/* Header: Group name + status */}
       <div className="line-group-card-header">

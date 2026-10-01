@@ -4,19 +4,24 @@
 
 import { Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Bell, Calendar, CheckCircle } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 
 const pageTitles: Record<string, string> = {
-  '/': 'ภาพรวม',
-  '/line-groups': 'กลุ่มไลน์ที่เชื่อมต่อ',
-  '/threat-logs': 'ประวัติภัยคุกคาม',
+  '/': 'Overview',
+  '/line-groups': 'Connected Line groups',
+  '/threat-logs': 'Threat History',
+  '/dataset': 'Dataset',
 };
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const breadcrumb = pageTitles[location.pathname] || '';
+
+  // Get page title — fallback for dynamic routes
+  const pageTitle =
+    pageTitles[location.pathname] ||
+    (location.pathname.startsWith('/line-groups/') ? '' : '');
 
   return (
     <>
@@ -47,6 +52,31 @@ export default function MainLayout() {
             >
               {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
+
+            {/* Top Header Bar */}
+            <header className="top-header">
+              <div className="top-header-left">
+                {pageTitle && <h1 className="top-header-title">{pageTitle}</h1>}
+                <div className="system-status">
+                  <span className="system-status-dot" />
+                  <span>ระบบทำงานปกติ</span>
+                </div>
+              </div>
+              <div className="top-header-right">
+                <div className="date-range-picker">
+                  <Calendar size={16} />
+                  <span>14 ส.ค. – 20 ส.ค. 2569</span>
+                  <CheckCircle size={16} className="date-range-check" />
+                </div>
+                <button className="header-icon-btn" aria-label="Notifications">
+                  <Bell size={20} />
+                </button>
+                <div className="header-user">
+                  <div className="header-user-avatar">AD</div>
+                  <span className="header-user-name">Admin</span>
+                </div>
+              </div>
+            </header>
 
             {/* Page content */}
             <main className="page-content">

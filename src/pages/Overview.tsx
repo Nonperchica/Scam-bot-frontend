@@ -4,19 +4,36 @@
 
 import { useEffect, useState } from 'react';
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts';
-import { ScanSearch, ShieldAlert, Activity, Users } from 'lucide-react';
-import StatCard from '../components/StatCard';
+import { TrendingDown, TrendingUp } from 'lucide-react';
 import { fetchDashboardStats, fetchTrendData } from '../services/api';
 import { formatNumber } from '../utils/formatters';
 import type { DashboardStats, TrendDataPoint } from '../types';
+
+// Donut chart data
+const scamTypeData = [
+  { name: 'หลอกลงทุนและหาก์ทำงาน\n(Investment & Job Scam)', fullName: 'หลอกลงทุนและหาก์ทำงาน (Investment & Job Scam)', desc: 'ลงทุนกำไรออลเซลลิ, เกรงอริโปปลอม', value: 65 },
+  { name: 'ฟิชชิงและแอบอ้าง\n(Phishing & Impersonation)', fullName: 'ฟิชชิงและแอบอ้าง (Phishing & Impersonation)', desc: 'ปัอเป็นเจ้าหน้าที่รัฐ, สืดทกรรม', value: 35 },
+];
+const SCAM_TYPE_COLORS = ['#2d6a3f', '#4a9960'];
+
+const riskLevelData = [
+  { name: 'เสี่ยงสูง (High Risk)', value: 40 },
+  { name: 'เสี่ยงปานกลาง (Medium)', value: 25 },
+  { name: 'ความเสี่ยงต่ำ (Low)', value: 25 },
+];
+const RISK_COLORS = ['#e6a817', '#d64545', '#3a8a4f'];
 
 export default function Overview() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -48,15 +65,6 @@ export default function Overview() {
     );
   }
 
-  // Generate "last week" comparison data for grouped bar chart
-  const chartData = trendData.map((d) => ({
-    date: d.date,
-    current: d.threats,
-    lastWeek: Math.max(0, d.threats + Math.floor((Math.random() - 0.5) * 10)),
-    scannedCurrent: d.scanned,
-    scannedLastWeek: Math.max(0, d.scanned + Math.floor((Math.random() - 0.5) * 300)),
-  }));
-
   const tooltipStyle = {
     backgroundColor: '#ffffff',
     border: '1px solid #e0e0e0',
@@ -67,104 +75,170 @@ export default function Overview() {
 
   return (
     <div className="overview-page">
-      {/* Stat Cards */}
-      <div className="stat-cards-grid">
-        <StatCard
-          title="ข้อความที่สแกนทั้งหมด"
-          value={formatNumber(stats?.totalScanned ?? 0)}
-          icon={<ScanSearch size={24} />}
-          trend={{ value: 12.5, isPositive: true }}
-          accentColor="var(--color-accent)"
-        />
-        <StatCard
-          title="ภัยคุกคามที่ตรวจพบ"
-          value={formatNumber(stats?.threatsDetected ?? 0)}
-          icon={<ShieldAlert size={24} />}
-          trend={{ value: 8.3, isPositive: false }}
-          accentColor="var(--color-risk-high)"
-        />
-        <StatCard
-          title="อัตราความเสี่ยง"
-          value={`${stats?.riskRate?.toFixed(2) ?? '0'}%`}
-          icon={<Activity size={24} />}
-          trend={{ value: 2.1, isPositive: false }}
-          accentColor="var(--color-risk-medium)"
-        />
-        <StatCard
-          title="ผู้ใช้งานที่เฝ้าระวัง"
-          value={formatNumber(stats?.activeUsers ?? 0)}
-          icon={<Users size={24} />}
-          trend={{ value: 5.7, isPositive: true }}
-          accentColor="var(--color-success)"
-        />
+      {/* Top Stat Cards — 3 columns */}
+      <div className="overview-stat-cards">
+        {/* อัตราความเสี่ยง */}
+        <div className="overview-stat-card">
+          <span className="overview-stat-label">อัตราความเสี่ยง</span>
+          <span className="overview-stat-value">{stats?.riskRate?.toFixed(2) ?? '0'}%</span>
+          <div className="overview-stat-trend overview-stat-trend--down">
+            <TrendingDown size={14} />
+            <span>2.1% จากสัปดาห์ก่อน</span>
+          </div>
+        </div>
+        {/* ภัยคุกคามที่ตรวจพบ */}
+        <div className="overview-stat-card">
+          <span className="overview-stat-label">ภัยคุกคามที่ตรวจพบ</span>
+          <span className="overview-stat-value">{formatNumber(stats?.threatsDetected ?? 0)}</span>
+          <div className="overview-stat-trend overview-stat-trend--down">
+            <TrendingDown size={14} />
+            <span>8.3% จากสัปดาห์ก่อน</span>
+          </div>
+        </div>
+        {/* ข้อความที่สแกนทั้งหมด */}
+        <div className="overview-stat-card">
+          <span className="overview-stat-label">ข้อความที่สแกนทั้งหมด</span>
+          <span className="overview-stat-value">{formatNumber(stats?.totalScanned ?? 0)}</span>
+          <div className="overview-stat-trend overview-stat-trend--up">
+            <TrendingUp size={14} />
+            <span>12.5% จากสัปดาห์ก่อน</span>
+          </div>
+        </div>
       </div>
 
-      {/* Charts */}
-      <div className="charts-grid">
-        {/* Threat Detection Trend */}
-        <div className="chart-card">
-          <div className="chart-card-header">
-            <div className="chart-card-header-left">
-              <h2 className="chart-title">แนวโน้มการตรวจจับภัยคุกคาม</h2>
-              <span className="chart-trend-badge">▲ 2.1% vs last week</span>
+      {/* Donut Charts Row */}
+      <div className="donut-charts-row">
+        {/* Scam Type Donut */}
+        <div className="donut-chart-card">
+          <div className="donut-chart-header">
+            <div>
+              <h2 className="donut-chart-title">ประเภทของข้อความ Scam</h2>
+              <p className="donut-chart-subtitle">จำแนกตามพฤติกรรมการหลอกลวง (รวม 342 เคส)</p>
             </div>
-            <button className="chart-view-report">View Report</button>
+            <span className="donut-chart-period">สัปดาห์นี้</span>
           </div>
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData} barGap={2} barCategoryGap="20%">
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
-                <XAxis dataKey="date" stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="current" fill="#4a6fa5" radius={[3, 3, 0, 0]} name="Last 6 days" />
-                <Bar dataKey="lastWeek" fill="#a0b4cc" radius={[3, 3, 0, 0]} name="Last Week" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="chart-legend">
-            <div className="chart-legend-item">
-              <span className="chart-legend-dot chart-legend-dot--primary" />
-              <span>Last 6 days</span>
+          <div className="donut-chart-body">
+            <div className="donut-chart-wrapper">
+              <PieChart width={200} height={200}>
+                <Pie
+                  data={scamTypeData}
+                  cx={100}
+                  cy={100}
+                  innerRadius={60}
+                  outerRadius={90}
+                  dataKey="value"
+                  stroke="none"
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  {scamTypeData.map((_entry, index) => (
+                    <Cell key={`cell-${index}`} fill={SCAM_TYPE_COLORS[index]} />
+                  ))}
+                </Pie>
+              </PieChart>
+              <div className="donut-center-label">
+                <span className="donut-center-value">342</span>
+                <span className="donut-center-text">เคสตรวจพบ</span>
+              </div>
             </div>
-            <div className="chart-legend-item">
-              <span className="chart-legend-dot chart-legend-dot--secondary" />
-              <span>Last Week</span>
+            <div className="donut-legend">
+              {scamTypeData.map((item, idx) => (
+                <div key={idx} className="donut-legend-item">
+                  <span className="donut-legend-dot" style={{ background: SCAM_TYPE_COLORS[idx] }} />
+                  <div className="donut-legend-text">
+                    <span className="donut-legend-name">{item.fullName}</span>
+                    <span className="donut-legend-value">{item.value}%</span>
+                    <span className="donut-legend-desc">{item.desc}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Scanned Messages */}
-        <div className="chart-card">
-          <div className="chart-card-header">
-            <div className="chart-card-header-left">
-              <h2 className="chart-title">จำนวนข้อความที่สแกน</h2>
-              <span className="chart-trend-badge">▲ 2.1% vs last week</span>
-            </div>
-            <button className="chart-view-report">View Report</button>
-          </div>
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData} barGap={2} barCategoryGap="20%">
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
-                <XAxis dataKey="date" stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="scannedCurrent" fill="#4a6fa5" radius={[3, 3, 0, 0]} name="Last 6 days" />
-                <Bar dataKey="scannedLastWeek" fill="#a0b4cc" radius={[3, 3, 0, 0]} name="Last Week" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="chart-legend">
-            <div className="chart-legend-item">
-              <span className="chart-legend-dot chart-legend-dot--primary" />
-              <span>Last 6 days</span>
-            </div>
-            <div className="chart-legend-item">
-              <span className="chart-legend-dot chart-legend-dot--secondary" />
-              <span>Last Week</span>
+        {/* Risk Level Donut */}
+        <div className="donut-chart-card">
+          <div className="donut-chart-header">
+            <div>
+              <h2 className="donut-chart-title">ระดับความเสี่ยงของข้อความ</h2>
+              <p className="donut-chart-subtitle">การประเมินจากทุกข้อความ</p>
             </div>
           </div>
+          <div className="donut-chart-body">
+            <div className="donut-chart-wrapper">
+              <PieChart width={200} height={200}>
+                <Pie
+                  data={riskLevelData}
+                  cx={100}
+                  cy={100}
+                  innerRadius={60}
+                  outerRadius={90}
+                  dataKey="value"
+                  stroke="none"
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  {riskLevelData.map((_entry, index) => (
+                    <Cell key={`cell-${index}`} fill={RISK_COLORS[index]} />
+                  ))}
+                </Pie>
+              </PieChart>
+              <div className="donut-center-label">
+                <span className="donut-center-subtext">ระดับสูง</span>
+                <span className="donut-center-value risk-value">40%</span>
+                <span className="donut-center-text">ข้อควรระวังมาก</span>
+              </div>
+            </div>
+            <div className="donut-legend">
+              {riskLevelData.map((item, idx) => (
+                <div key={idx} className="donut-legend-item">
+                  <span className="donut-legend-dot" style={{ background: RISK_COLORS[idx] }} />
+                  <div className="donut-legend-text">
+                    <span className="donut-legend-name">{item.name}</span>
+                    <span className="donut-legend-value">{item.value}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Line Chart */}
+      <div className="chart-card overview-line-chart">
+        <div className="chart-card-header">
+          <div className="chart-card-header-left">
+            <h2 className="chart-title">จำนวนข้อความทั้งหมด & ข้อความที่น่าสงสัย</h2>
+          </div>
+        </div>
+        <div className="chart-container">
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+              <XAxis dataKey="date" stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="totalMessages"
+                name="ข้อความทั้งหมด"
+                stroke="#4a6fa5"
+                strokeWidth={2.5}
+                dot={{ r: 4, fill: '#4a6fa5' }}
+                activeDot={{ r: 6 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="suspiciousMessages"
+                name="ข้อความที่น่าสงสัย"
+                stroke="#2d6a3f"
+                strokeWidth={2.5}
+                dot={{ r: 4, fill: '#2d6a3f' }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
