@@ -1,90 +1,51 @@
-// =============================================
-// Senior Guard — Main Layout
-// =============================================
-
 import { Outlet, useLocation } from 'react-router-dom';
-import { useState } from 'react';
-import { Menu, X, Bell, Calendar, CheckCircle } from 'lucide-react';
+import { useRef } from 'react';
+import { CalendarDays, ChevronRight, Menu, ShieldCheck, X } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 
-const pageTitles: Record<string, string> = {
-  '/': 'Overview',
-  '/line-groups': 'Connected Line groups',
-  '/threat-logs': 'Threat History',
-  '/dataset': 'Dataset',
+const pages: Record<string, { title: string; subtitle: string; english: string }> = {
+  '/': { title: 'ภาพรวมระบบ', subtitle: 'มองเห็นความเสี่ยง ดูแลทุกบทสนทนา', english: 'Overview' },
+  '/line-groups': { title: 'กลุ่ม LINE ที่เชื่อมต่อ', subtitle: 'ดูแลการสนทนาและติดตามความเสี่ยงในแต่ละกลุ่ม', english: 'LINE groups' },
+  '/threat-logs': { title: 'ประวัติความเสี่ยง', subtitle: 'ค้นหาและตรวจสอบข้อความที่ Eh?Bot พบความเสี่ยง', english: 'Threat history' },
+  '/dataset': { title: 'ชุดข้อมูล', subtitle: 'จัดการตัวอย่างข้อความสำหรับพัฒนาการตรวจจับ', english: 'Dataset' },
 };
 
 export default function MainLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mobileMenu = useRef<HTMLDialogElement>(null);
   const location = useLocation();
-
-  // Get page title — fallback for dynamic routes
-  const pageTitle =
-    pageTitles[location.pathname] ||
-    (location.pathname.startsWith('/line-groups/') ? '' : '');
-
+  const page = pages[location.pathname] || { title: 'รายละเอียดกลุ่ม', subtitle: 'ภาพรวมการตรวจข้อความของกลุ่ม LINE', english: 'Group details' };
+  const today = new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Bangkok' }).format(new Date());
   return (
-    <>
-      {/* Green border frame */}
-      <div className="app-frame">
-        {/* Mobile overlay */}
-        {sidebarOpen && (
-          <div
-            className="sidebar-overlay"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        <div className="app-layout">
-          {/* Sidebar */}
-          <div className={`sidebar-container ${sidebarOpen ? 'sidebar-container--open' : ''}`}>
-            <Sidebar />
-          </div>
-
-          {/* Main content */}
-          <div className="main-content">
-            {/* Mobile menu button */}
-            <button
-              className="mobile-menu-btn"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              aria-label="Toggle menu"
-              style={{ padding: '16px', position: 'absolute', top: 0, left: 0, zIndex: 10 }}
-            >
-              {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
-
-            {/* Top Header Bar */}
-            <header className="top-header">
-              <div className="top-header-left">
-                {pageTitle && <h1 className="top-header-title">{pageTitle}</h1>}
-                <div className="system-status">
-                  <span className="system-status-dot" />
-                  <span>ระบบทำงานปกติ</span>
-                </div>
-              </div>
-              <div className="top-header-right">
-                <div className="date-range-picker">
-                  <Calendar size={16} />
-                  <span>14 ส.ค. – 20 ส.ค. 2569</span>
-                  <CheckCircle size={16} className="date-range-check" />
-                </div>
-                <button className="header-icon-btn" aria-label="Notifications">
-                  <Bell size={20} />
-                </button>
-                <div className="header-user">
-                  <div className="header-user-avatar">AD</div>
-                  <span className="header-user-name">Admin</span>
-                </div>
-              </div>
-            </header>
-
-            {/* Page content */}
-            <main className="page-content">
-              <Outlet />
-            </main>
-          </div>
+    <div className="app-frame">
+      <a href="#main-content" className="skip-link">ข้ามไปยังเนื้อหา</a>
+      <div className="app-layout">
+        <div className="sidebar-container"><Sidebar /></div>
+        <dialog ref={mobileMenu} className="mobile-nav-dialog" aria-label="เมนูหลัก"
+          onClick={event => { if (event.target === event.currentTarget) mobileMenu.current?.close(); }}>
+          <button className="mobile-nav-close" aria-label="ปิดเมนู" onClick={() => mobileMenu.current?.close()}><X size={22} /></button>
+          <Sidebar onNavigate={() => mobileMenu.current?.close()} />
+        </dialog>
+        <div className="main-content">
+          <header className="top-header">
+            <div className="header-breadcrumb">
+              <button className="mobile-menu-btn" onClick={() => mobileMenu.current?.showModal()} aria-label="เปิดเมนู"><Menu size={22} /></button>
+              <span className="breadcrumb-brand">Workspace</span><ChevronRight size={14} /><span>{page.english}</span>
+            </div>
+            <div className="top-header-right">
+              <span className="header-admin-label"><ShieldCheck size={15} /> Admin console</span>
+              <div className="header-user"><div className="header-user-avatar">AD</div><div><strong>Admin</strong><small>ผู้ดูแลระบบ</small></div></div>
+            </div>
+          </header>
+          <main id="main-content" className="page-content" tabIndex={-1}>
+            <div className="page-heading">
+              <div><div className="eyebrow">EH?BOT / {page.english.toUpperCase()}</div><h1>{page.title}</h1><p>{page.subtitle}</p></div>
+              <span className="today-label"><CalendarDays size={16} />{today}</span>
+            </div>
+            <Outlet />
+            <footer className="workspace-footer"><span>Eh?Bot — เอ๊ะก่อนคลิก เช็กก่อนเชื่อ</span><span>ออกแบบมาเพื่อบทสนทนาที่ปลอดภัยขึ้น</span></footer>
+          </main>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+import DataError from '../components/DataError';
 // =============================================
 // Senior Guard — Threat Logs Page
 // =============================================
@@ -11,6 +12,7 @@ import type { ThreatLog, RiskLevel } from '../types';
 export default function ThreatLogs() {
   const [logs, setLogs] = useState<ThreatLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRisk, setFilterRisk] = useState<RiskLevel | 'all'>('all');
 
@@ -19,6 +21,8 @@ export default function ThreatLogs() {
       try {
         const data = await fetchThreatLogs();
         setLogs(data);
+      } catch {
+        setError('โหลดข้อมูลจริงไม่สำเร็จ กรุณาตรวจการเชื่อมต่อหรือรหัสเข้า Dashboard');
       } finally {
         setLoading(false);
       }
@@ -39,6 +43,8 @@ export default function ThreatLogs() {
     return matchSearch && matchRisk;
   });
 
+  if (error) return <DataError message={error} />;
+
   if (loading) {
     return (
       <div className="loading-screen">
@@ -57,6 +63,7 @@ export default function ThreatLogs() {
           <Search size={18} className="search-icon" />
           <input
             type="text"
+            aria-label="ค้นหาประวัติความเสี่ยง"
             placeholder="ค้นหาข้อความ, ผู้ส่ง, ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -68,6 +75,7 @@ export default function ThreatLogs() {
         <div className="filter-group">
           <Filter size={18} />
           <select
+            aria-label="ระดับความเสี่ยง"
             value={filterRisk}
             onChange={(e) => setFilterRisk(e.target.value as RiskLevel | 'all')}
             className="filter-select"
@@ -76,6 +84,7 @@ export default function ThreatLogs() {
             <option value="high">สูง</option>
             <option value="medium">ปานกลาง</option>
             <option value="low">ต่ำ</option>
+            <option value="unknown">ไม่ระบุ</option>
           </select>
         </div>
 

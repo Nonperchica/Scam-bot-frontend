@@ -1,3 +1,4 @@
+-- LEGACY DEMO SCHEMA: do not run for the live dashboard. See LIVE_DASHBOARD.md.
 -- =============================================
 -- Senior Guard — Supabase Schema (SKELETON)
 -- ⚠️  โครงตาราง — ยังไม่ได้กำหนด column สุดท้าย

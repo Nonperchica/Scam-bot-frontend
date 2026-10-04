@@ -1,3 +1,4 @@
+import DataError from '../components/DataError';
 // =============================================
 // Senior Guard — Group Dashboard Page
 // =============================================
@@ -27,6 +28,7 @@ export default function GroupDashboard() {
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
   const [threatLogs, setThreatLogs] = useState<ThreatLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     async function loadData() {
@@ -40,16 +42,20 @@ export default function GroupDashboard() {
         setGroup(g);
         const [trend, threats] = await Promise.all([
           fetchGroupTrendData(groupId),
-          fetchGroupThreatLogs(g.name),
+          fetchGroupThreatLogs(groupId),
         ]);
         setTrendData(trend);
         setThreatLogs(threats);
+      } catch {
+        setError('โหลดข้อมูลจริงไม่สำเร็จ กรุณาตรวจการเชื่อมต่อหรือรหัสเข้า Dashboard');
       } finally {
         setLoading(false);
       }
     }
     loadData();
   }, [groupId, navigate]);
+
+  if (error) return <DataError message={error} />;
 
   if (loading || !group) {
     return (
@@ -80,7 +86,7 @@ export default function GroupDashboard() {
 
   const statusLabel: Record<string, string> = {
     blocked: 'บล็อกแล้ว',
-    flagged: 'แจ้งเตือน',
+    flagged: 'พบความเสี่ยง',
     reviewed: 'ตรวจสอบแล้ว',
     pending: 'รอดำเนินการ',
   };
@@ -106,17 +112,17 @@ export default function GroupDashboard() {
             <h1 className="page-title" style={{ marginBottom: '4px' }}>{group.name}</h1>
             <span className={`line-group-status line-group-status--${group.status}`}>
               <span className="line-group-status-dot" />
-              {group.status === 'active' ? 'ออนไลน์' : 'ออฟไลน์'}
+              {group.status === 'active' ? 'ใช้งานอยู่' : 'ไม่ได้ใช้งาน'}
             </span>
           </div>
         </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="stat-cards-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="stat-cards-grid group-stats-grid">
         <StatCard
           title="สมาชิกในกลุ่ม"
-          value={formatNumber(group.memberCount)}
+          value={group.memberCount == null ? 'ไม่ระบุ' : formatNumber(group.memberCount)}
           icon={<Users size={24} />}
           accentColor="var(--color-accent)"
         />
@@ -160,18 +166,18 @@ export default function GroupDashboard() {
                   type="monotone"
                   dataKey="totalMessages"
                   name="ข้อความทั้งหมด"
-                  stroke="#4a6fa5"
+                  stroke="#29ad8f"
                   strokeWidth={2.5}
-                  dot={{ r: 4, fill: '#4a6fa5' }}
+                  dot={{ r: 4, fill: '#29ad8f' }}
                   activeDot={{ r: 6 }}
                 />
                 <Line
                   type="monotone"
                   dataKey="suspiciousMessages"
                   name="ข้อความที่น่าสงสัย"
-                  stroke="#e74c3c"
+                  stroke="#ef367f"
                   strokeWidth={2.5}
-                  dot={{ r: 4, fill: '#e74c3c' }}
+                  dot={{ r: 4, fill: '#ef367f' }}
                   activeDot={{ r: 6 }}
                   strokeDasharray="6 3"
                 />
@@ -215,7 +221,7 @@ export default function GroupDashboard() {
                         {riskLevelLabel[log.riskLevel]}
                       </span>
                     </td>
-                    <td>{log.confidence}%</td>
+                    <td>{log.confidence == null ? 'ไม่มีข้อมูล' : `${log.confidence}%`}</td>
                     <td>
                       <span className={`status-badge status-badge--${log.status}`}>
                         {statusLabel[log.status]}
@@ -225,7 +231,7 @@ export default function GroupDashboard() {
                       {new Date(log.timestamp).toLocaleDateString('th-TH', {
                         day: 'numeric',
                         month: 'short',
-                        year: 'numeric',
+                        year: 'numeric', timeZone: 'Asia/Bangkok',
                       })}
                     </td>
                   </tr>

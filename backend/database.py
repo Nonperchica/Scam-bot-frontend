@@ -3,10 +3,11 @@
 # =============================================
 
 import os
+from pathlib import Path
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).with_name(".env"))
 
 _supabase_client: Client | None = None
 
@@ -16,7 +17,7 @@ def get_supabase_client() -> Client:
     global _supabase_client
     if _supabase_client is None:
         url: str = os.environ.get("SUPABASE_URL", "")
-        key: str = os.environ.get("SUPABASE_SERVICE_KEY", "")
+        key: str = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_KEY", "")
         if not url or not key:
             raise ValueError(
                 "SUPABASE_URL และ SUPABASE_SERVICE_KEY ต้องตั้งค่าใน .env"

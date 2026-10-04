@@ -11,6 +11,7 @@ import type { RiskLevel } from '../types';
 export function formatDate(isoString: string): string {
   const date = new Date(isoString);
   return date.toLocaleDateString('th-TH', {
+    timeZone: 'Asia/Bangkok',
     day: 'numeric',
     month: 'short',
     year: 'numeric',

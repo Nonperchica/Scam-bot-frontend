@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import stats, threats, trends, line_groups, webhook
+from routers import dashboard
 from database import get_supabase_client
 
 
@@ -15,9 +15,9 @@ async def lifespan(app: FastAPI):
     # Startup: ตรวจสอบการเชื่อมต่อ Supabase
     try:
         get_supabase_client()
-        print("✅ Connected to Supabase successfully")
-    except Exception as e:
-        print(f"❌ Failed to connect to Supabase: {e}")
+        print("Supabase client configured (connection checked on first query)")
+    except Exception:
+        print("Supabase configuration is missing or invalid")
     yield
     # Shutdown
     print("🛑 Shutting down Senior Guard API")
@@ -44,11 +44,7 @@ app.add_middleware(
 )
 
 # Routers
-app.include_router(stats.router,       prefix="/api")
-app.include_router(threats.router,     prefix="/api")
-app.include_router(trends.router,      prefix="/api")
-app.include_router(line_groups.router, prefix="/api")
-app.include_router(webhook.router,     prefix="/api")
+app.include_router(dashboard.router, prefix="/api")
 
 
 @app.get("/", tags=["Health"])

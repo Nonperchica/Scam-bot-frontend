@@ -1,245 +1,124 @@
-// =============================================
-// Senior Guard — Overview Page (Dashboard)
-// =============================================
-
 import { useEffect, useState } from 'react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import { TrendingDown, TrendingUp } from 'lucide-react';
-import { fetchDashboardStats, fetchTrendData } from '../services/api';
+import { Link } from 'react-router-dom';
+import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Activity, ArrowRight, ArrowUpRight, CalendarDays, CheckCheck, CircleHelp, Database, MessageSquareText, MessagesSquare, RefreshCw, ShieldAlert, ShieldCheck, Sparkles } from 'lucide-react';
+import { fetchDashboardStats } from '../services/api';
+import DataError from '../components/DataError';
 import { formatNumber } from '../utils/formatters';
-import type { DashboardStats, TrendDataPoint } from '../types';
+import type { DashboardStats } from '../types';
 
-// Donut chart data
-const scamTypeData = [
-  { name: 'หลอกลงทุนและหาก์ทำงาน\n(Investment & Job Scam)', fullName: 'หลอกลงทุนและหาก์ทำงาน (Investment & Job Scam)', desc: 'ลงทุนกำไรออลเซลลิ, เกรงอริโปปลอม', value: 65 },
-  { name: 'ฟิชชิงและแอบอ้าง\n(Phishing & Impersonation)', fullName: 'ฟิชชิงและแอบอ้าง (Phishing & Impersonation)', desc: 'ปัอเป็นเจ้าหน้าที่รัฐ, สืดทกรรม', value: 35 },
+const riskLevels = [
+  { key: 'high', name: 'เสี่ยงสูง', color: '#ef367f' },
+  { key: 'medium', name: 'เสี่ยงปานกลาง', color: '#edb950' },
+  { key: 'low', name: 'เสี่ยงต่ำ', color: '#35c8a1' },
+  { key: 'unknown', name: 'ไม่ระบุ', color: '#b9adbf' },
 ];
-const SCAM_TYPE_COLORS = ['#2d6a3f', '#4a9960'];
-
-const riskLevelData = [
-  { name: 'เสี่ยงสูง (High Risk)', value: 40 },
-  { name: 'เสี่ยงปานกลาง (Medium)', value: 25 },
-  { name: 'ความเสี่ยงต่ำ (Low)', value: 25 },
-];
-const RISK_COLORS = ['#e6a817', '#d64545', '#3a8a4f'];
+const tooltipStyle = { border: '1px solid #ece7ee', borderRadius: 12, fontSize: 12, boxShadow: '0 8px 28px #29133112' };
 
 export default function Overview() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [revision, setRevision] = useState(0);
+  const [series, setSeries] = useState({ total: true, risk: true });
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [s, t] = await Promise.all([
-          fetchDashboardStats(),
-          fetchTrendData(),
-        ]);
-        setStats(s);
-        setTrendData(t);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
+    let active = true;
+    fetchDashboardStats().then(data => {
+      if (active) { setStats(data); setError(''); }
+    }).catch((cause: unknown) => {
+      if (active) setError(cause instanceof Error ? cause.message : 'กรุณาตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง');
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [revision]);
 
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-spinner" />
-        <p>กำลังโหลดข้อมูล...</p>
-      </div>
-    );
-  }
-
-  const tooltipStyle = {
-    backgroundColor: '#ffffff',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    color: '#2c3e2d',
-    fontSize: '12px',
-  };
+  function refresh() { setLoading(true); setError(''); setRevision(value => value + 1); }
+  const risks = riskLevels.map(risk => ({ ...risk, value: stats?.riskLevels[risk.key] || 0 }));
+  const assessed = risks.reduce((sum, risk) => sum + risk.value, 0);
+  const number = (value: number | undefined) => value === undefined ? '—' : formatNumber(value);
+  const metrics = [
+    { label: 'ข้อความที่บันทึก', value: number(stats?.totalScanned), unit: 'ข้อความ', detail: 'จากแชทส่วนตัวและกลุ่ม', icon: MessageSquareText, tone: 'plum' },
+    { label: 'ข้อความที่พบความเสี่ยง', value: number(stats?.threatsDetected), unit: 'ข้อความ', detail: 'ตรวจพบสัญญาณที่ควรระวัง', icon: ShieldAlert, tone: 'pink' },
+    { label: 'สัดส่วนความเสี่ยง', value: stats ? stats.riskRate.toFixed(2) : '—', unit: '%', detail: 'เทียบกับข้อความทั้งหมด', icon: Activity, tone: 'amber' },
+    { label: 'ไม่พบสัญญาณเสี่ยง', value: number(stats ? stats.statuses.no_risk_found || 0 : undefined), unit: 'ข้อความ', detail: 'จากผลการตรวจของระบบ', icon: ShieldCheck, tone: 'mint' },
+  ];
+  const outcomes = [
+    { key: 'no_risk_found', label: 'ไม่พบสัญญาณเสี่ยง', icon: ShieldCheck, tone: 'mint' },
+    { key: 'uncertain', label: 'ข้อมูลไม่พอสรุป', icon: CircleHelp, tone: 'amber' },
+    { key: 'conversation', label: 'บทสนทนาทั่วไป', icon: MessagesSquare, tone: 'plum' },
+    { key: 'error', label: 'ตรวจไม่สำเร็จ', icon: ShieldAlert, tone: 'pink' },
+  ];
 
   return (
-    <div className="overview-page">
-      {/* Top Stat Cards — 3 columns */}
-      <div className="overview-stat-cards">
-        {/* อัตราความเสี่ยง */}
-        <div className="overview-stat-card">
-          <span className="overview-stat-label">อัตราความเสี่ยง</span>
-          <span className="overview-stat-value">{stats?.riskRate?.toFixed(2) ?? '0'}%</span>
-          <div className="overview-stat-trend overview-stat-trend--down">
-            <TrendingDown size={14} />
-            <span>2.1% จากสัปดาห์ก่อน</span>
-          </div>
+    <div className="eh-overview" aria-busy={loading}>
+      <section className="welcome-banner" aria-label="Eh?Bot ผู้ช่วยสังเกตความเสี่ยง">
+        <div className="welcome-copy"><span className="welcome-kicker"><Sparkles size={14} /> A LITTLE DOUBT. A LOT SAFER.</span>
+          <h2>เอ๊ะก่อนคลิก <span>เช็กก่อนเชื่อ.</span></h2>
+          <p>ผู้ช่วยสังเกตข้อความน่าสงสัย ให้คุณดูแลทุกบทสนทนาได้อย่างมั่นใจ</p>
+          <Link to="/threat-logs" className="button button-dark">ตรวจดูความเสี่ยง <ArrowUpRight size={16} /></Link>
         </div>
-        {/* ภัยคุกคามที่ตรวจพบ */}
-        <div className="overview-stat-card">
-          <span className="overview-stat-label">ภัยคุกคามที่ตรวจพบ</span>
-          <span className="overview-stat-value">{formatNumber(stats?.threatsDetected ?? 0)}</span>
-          <div className="overview-stat-trend overview-stat-trend--down">
-            <TrendingDown size={14} />
-            <span>8.3% จากสัปดาห์ก่อน</span>
-          </div>
-        </div>
-        {/* ข้อความที่สแกนทั้งหมด */}
-        <div className="overview-stat-card">
-          <span className="overview-stat-label">ข้อความที่สแกนทั้งหมด</span>
-          <span className="overview-stat-value">{formatNumber(stats?.totalScanned ?? 0)}</span>
-          <div className="overview-stat-trend overview-stat-trend--up">
-            <TrendingUp size={14} />
-            <span>12.5% จากสัปดาห์ก่อน</span>
-          </div>
-        </div>
+        <div className="welcome-art" aria-hidden="true"><span className="art-orbit" /><span className="art-spark art-spark-one">✦</span><span className="mascot-bubble">เอ๊ะ? ให้ผมช่วยดู</span><img src="/ehbot-logo.png" alt="" /><span className="art-spark art-spark-two">✦</span></div>
+      </section>
+
+      <div className="overview-section-bar">
+        <div><h2>ภาพรวมการตรวจสอบ <span className="period-label">7 วันล่าสุด</span></h2><p aria-live="polite">{loading ? 'กำลังอัปเดตข้อมูล…' : error ? 'ไม่สามารถอัปเดตข้อมูลได้' : stats ? `อัปเดต ${new Date(stats.updatedAt).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} น. · เวลาไทย` : 'รอข้อมูลจากระบบ'}</p></div>
+        <button className="button button-secondary" onClick={refresh} disabled={loading}><RefreshCw size={15} className={loading ? 'is-spinning' : ''} /><span>รีเฟรชข้อมูล</span></button>
+      </div>
+      {error && <DataError message={error} onRetry={refresh} />}
+      {stats && error && <p className="stale-data-note">แสดงข้อมูลจากการโหลดสำเร็จครั้งล่าสุด</p>}
+
+      <div className="eh-metrics">
+        {metrics.map(metric => <article className={`metric-card metric-card--${metric.tone}`} key={metric.label}>
+          <div className="metric-top"><span>{metric.label}</span><span className={`metric-icon tone-${metric.tone}`}><metric.icon size={19} strokeWidth={1.8} /></span></div>
+          <div className="metric-number">{metric.value}<span>{metric.unit}</span></div>
+          <div className="metric-detail"><span className={`detail-dot tone-${metric.tone}`} />{metric.detail}</div>
+        </article>)}
       </div>
 
-      {/* Donut Charts Row */}
-      <div className="donut-charts-row">
-        {/* Scam Type Donut */}
-        <div className="donut-chart-card">
-          <div className="donut-chart-header">
-            <div>
-              <h2 className="donut-chart-title">ประเภทของข้อความ Scam</h2>
-              <p className="donut-chart-subtitle">จำแนกตามพฤติกรรมการหลอกลวง (รวม 342 เคส)</p>
-            </div>
-            <span className="donut-chart-period">สัปดาห์นี้</span>
-          </div>
-          <div className="donut-chart-body">
-            <div className="donut-chart-wrapper">
-              <PieChart width={200} height={200}>
-                <Pie
-                  data={scamTypeData}
-                  cx={100}
-                  cy={100}
-                  innerRadius={60}
-                  outerRadius={90}
-                  dataKey="value"
-                  stroke="none"
-                  startAngle={90}
-                  endAngle={-270}
-                >
-                  {scamTypeData.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={SCAM_TYPE_COLORS[index]} />
-                  ))}
-                </Pie>
-              </PieChart>
-              <div className="donut-center-label">
-                <span className="donut-center-value">342</span>
-                <span className="donut-center-text">เคสตรวจพบ</span>
-              </div>
-            </div>
-            <div className="donut-legend">
-              {scamTypeData.map((item, idx) => (
-                <div key={idx} className="donut-legend-item">
-                  <span className="donut-legend-dot" style={{ background: SCAM_TYPE_COLORS[idx] }} />
-                  <div className="donut-legend-text">
-                    <span className="donut-legend-name">{item.fullName}</span>
-                    <span className="donut-legend-value">{item.value}%</span>
-                    <span className="donut-legend-desc">{item.desc}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Risk Level Donut */}
-        <div className="donut-chart-card">
-          <div className="donut-chart-header">
-            <div>
-              <h2 className="donut-chart-title">ระดับความเสี่ยงของข้อความ</h2>
-              <p className="donut-chart-subtitle">การประเมินจากทุกข้อความ</p>
-            </div>
-          </div>
-          <div className="donut-chart-body">
-            <div className="donut-chart-wrapper">
-              <PieChart width={200} height={200}>
-                <Pie
-                  data={riskLevelData}
-                  cx={100}
-                  cy={100}
-                  innerRadius={60}
-                  outerRadius={90}
-                  dataKey="value"
-                  stroke="none"
-                  startAngle={90}
-                  endAngle={-270}
-                >
-                  {riskLevelData.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={RISK_COLORS[index]} />
-                  ))}
-                </Pie>
-              </PieChart>
-              <div className="donut-center-label">
-                <span className="donut-center-subtext">ระดับสูง</span>
-                <span className="donut-center-value risk-value">40%</span>
-                <span className="donut-center-text">ข้อควรระวังมาก</span>
-              </div>
-            </div>
-            <div className="donut-legend">
-              {riskLevelData.map((item, idx) => (
-                <div key={idx} className="donut-legend-item">
-                  <span className="donut-legend-dot" style={{ background: RISK_COLORS[idx] }} />
-                  <div className="donut-legend-text">
-                    <span className="donut-legend-name">{item.name}</span>
-                    <span className="donut-legend-value">{item.value}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Line Chart */}
-      <div className="chart-card overview-line-chart">
-        <div className="chart-card-header">
-          <div className="chart-card-header-left">
-            <h2 className="chart-title">จำนวนข้อความทั้งหมด & ข้อความที่น่าสงสัย</h2>
-          </div>
-        </div>
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
-              <XAxis dataKey="date" stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
+      <div className="analytics-grid">
+        <section className="eh-panel activity-panel">
+          <div className="panel-heading"><div><h2>แนวโน้มข้อความ</h2><p>ภาพรวมข้อความทั้งหมดและข้อความที่พบความเสี่ยง</p></div><span className="panel-icon"><Activity size={18} /></span></div>
+          <div className="chart-controls"><div className="chart-legend">
+            <button aria-pressed={series.total} onClick={() => setSeries(current => ({ ...current, total: !current.total }))}><span style={{ background: series.total ? '#39bd9d' : '#d9d2dc' }} />ข้อความทั้งหมด</button>
+            <button aria-pressed={series.risk} onClick={() => setSeries(current => ({ ...current, risk: !current.risk }))}><span style={{ background: series.risk ? '#ef367f' : '#d9d2dc' }} />พบความเสี่ยง</button>
+          </div><span className="chart-unit">หน่วย: ข้อความ</span></div>
+          <div className="activity-chart" role="img" aria-label={stats ? `แนวโน้ม 7 วัน: ${stats.totalScanned} ข้อความ พบความเสี่ยง ${stats.threatsDetected} ข้อความ` : 'กราฟแนวโน้ม รอข้อมูล'}>
+            {stats && stats.totalScanned > 0 ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={stats.trends} margin={{ top: 14, right: 10, left: -22, bottom: 0 }}>
+              <defs><linearGradient id="eh-mint-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#35c8a1" stopOpacity={0.22} /><stop offset="100%" stopColor="#35c8a1" stopOpacity={0.01} /></linearGradient><linearGradient id="eh-pink-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ef367f" stopOpacity={0.13} /><stop offset="100%" stopColor="#ef367f" stopOpacity={0.01} /></linearGradient></defs>
+              <CartesianGrid strokeDasharray="3 5" stroke="#eee9ef" vertical={false} />
+              <XAxis dataKey="date" tick={{ fill: '#7f7584', fontSize: 11 }} tickLine={false} axisLine={false} tickMargin={12} />
+              <YAxis allowDecimals={false} tick={{ fill: '#7f7584', fontSize: 11 }} tickLine={false} axisLine={false} />
               <Tooltip contentStyle={tooltipStyle} />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="totalMessages"
-                name="ข้อความทั้งหมด"
-                stroke="#4a6fa5"
-                strokeWidth={2.5}
-                dot={{ r: 4, fill: '#4a6fa5' }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="suspiciousMessages"
-                name="ข้อความที่น่าสงสัย"
-                stroke="#2d6a3f"
-                strokeWidth={2.5}
-                dot={{ r: 4, fill: '#2d6a3f' }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+              {series.total && <Area type="monotone" dataKey="totalMessages" name="ข้อความทั้งหมด" stroke="#29ad8f" strokeWidth={2.5} fill="url(#eh-mint-fill)" isAnimationActive={false} />}
+              {series.risk && <Area type="monotone" dataKey="suspiciousMessages" name="พบความเสี่ยง" stroke="#ef367f" strokeWidth={2.5} fill="url(#eh-pink-fill)" isAnimationActive={false} />}
+            </AreaChart></ResponsiveContainer> : <div className="chart-empty"><span><Activity size={28} /></span><strong>{loading ? 'กำลังโหลดแนวโน้มข้อความ' : stats ? 'ยังไม่มีข้อความในช่วง 7 วันนี้' : 'กราฟจะแสดงเมื่อเชื่อมต่อข้อมูล'}</strong><p>รวมแชทส่วนตัวและกลุ่ม LINE</p></div>}
+          </div>
+          <div className="chart-footnote"><CalendarDays size={13} />ข้อมูลรายวันในเขตเวลาไทย</div>
+        </section>
+
+        <section className="eh-panel risk-panel">
+          <div className="panel-heading"><div><h2>ระดับความเสี่ยง</h2><p>เฉพาะผลตรวจที่สรุปได้</p></div><ShieldAlert size={18} className="muted-icon" /></div>
+          <div className="risk-donut" role="img" aria-label={stats ? `ผลตรวจที่สรุปได้ ${assessed} ข้อความ` : 'ระดับความเสี่ยง รอข้อมูล'}>
+            <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={assessed ? risks : [{ value: 1, color: '#f0ecf2' }]} innerRadius={65} outerRadius={84} dataKey="value" startAngle={90} endAngle={-270} paddingAngle={assessed ? 4 : 0} stroke="none" cornerRadius={5} isAnimationActive={false}>
+              {(assessed ? risks : [{ key: 'empty', color: '#f0ecf2' }]).map(risk => <Cell key={risk.key} fill={risk.color} />)}
+            </Pie>{assessed > 0 && <Tooltip contentStyle={tooltipStyle} />}</PieChart></ResponsiveContainer>
+            <div className="risk-donut-center"><small>ผลตรวจทั้งหมด</small><strong>{stats ? formatNumber(assessed) : '—'}</strong><span>ข้อความ</span></div>
+          </div>
+          <div className="risk-legend">{risks.map(risk => <div key={risk.key}><span className="risk-legend-name"><i style={{ background: risk.color }} />{risk.name}</span><strong>{stats ? formatNumber(risk.value) : '—'}</strong><span className="risk-percent">{assessed ? `${(risk.value / assessed * 100).toFixed(0)}%` : '—'}</span></div>)}</div>
+          <p className="panel-note">ไม่รวมบทสนทนาทั่วไป ผลที่ยังไม่แน่ชัด และการตรวจที่ล้มเหลว</p>
+        </section>
+      </div>
+
+      <div className="overview-bottom-grid">
+        <section className="eh-panel outcomes-panel"><div className="panel-heading"><div><h2>ผลการตรวจข้อความ</h2><p>แยกตามสถานะการวิเคราะห์ของระบบ</p></div><CheckCheck size={19} className="muted-icon" /></div>
+          <div className="outcome-list">{outcomes.map(outcome => <div className="outcome-row" key={outcome.key}><span className={`outcome-icon tone-${outcome.tone}`}><outcome.icon size={16} /></span><span>{outcome.label}</span><strong>{number(stats ? stats.statuses[outcome.key] || 0 : undefined)}</strong><small>ข้อความ</small></div>)}</div>
+          <div className="outcomes-footer"><span>ใช้กฎสำรองในการตรวจ</span><strong>{number(stats ? stats.statuses.fallback || 0 : undefined)} <span>ข้อความ</span></strong></div>
+        </section>
+        <section className="quick-access"><span className="eyebrow">YOUR NEXT STEP</span><h2>ดูแลต่อได้จากตรงนี้</h2><p>เครื่องมือที่ช่วยให้คุณเห็นภาพชัดขึ้น</p>
+          <Link to="/threat-logs" className="quick-link"><span className="quick-icon tone-pink"><ShieldAlert size={20} /></span><span><strong>ตรวจสอบข้อความเสี่ยง</strong><small>ค้นหาและกรองตามระดับความเสี่ยง</small></span><ArrowUpRight size={18} /></Link>
+          <Link to="/line-groups" className="quick-link"><span className="quick-icon tone-mint"><MessagesSquare size={20} /></span><span><strong>จัดการกลุ่ม LINE</strong><small>ดูสถานะและสถิติของแต่ละกลุ่ม</small></span><ArrowUpRight size={18} /></Link>
+          <Link to="/dataset" className="dataset-shortcut"><Database size={16} />ไปที่ชุดข้อมูลสำหรับพัฒนาระบบ<ArrowRight size={15} /></Link>
+        </section>
       </div>
     </div>
   );

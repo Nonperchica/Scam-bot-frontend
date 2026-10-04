@@ -14,11 +14,11 @@ interface LineGroupCardProps {
 
 export default function LineGroupCard({ group, index }: LineGroupCardProps) {
   const navigate = useNavigate();
-  const joinDate = new Date(group.joinedAt).toLocaleDateString('th-TH', {
+  const joinDate = group.joinedAt ? new Date(group.joinedAt).toLocaleDateString('th-TH', {
     day: 'numeric',
     month: 'short',
-    year: 'numeric',
-  });
+    year: 'numeric', timeZone: 'Asia/Bangkok',
+  }) : 'ไม่ระบุ';
 
   return (
     <div
@@ -40,7 +40,7 @@ export default function LineGroupCard({ group, index }: LineGroupCardProps) {
           <span className="line-group-name">{group.name}</span>
           <span className={`line-group-status line-group-status--${group.status}`}>
             <span className="line-group-status-dot" />
-            {group.status === 'active' ? 'ออนไลน์' : 'ออฟไลน์'}
+            {group.status === 'active' ? 'ใช้งานอยู่' : 'ไม่ได้ใช้งาน'}
           </span>
         </div>
       </div>
@@ -49,7 +49,7 @@ export default function LineGroupCard({ group, index }: LineGroupCardProps) {
       <div className="line-group-stats">
         <div className="line-group-stat">
           <Users size={14} className="line-group-stat-icon" />
-          <span className="line-group-stat-value">{formatNumber(group.memberCount)}</span>
+          <span className="line-group-stat-value">{group.memberCount == null ? 'ไม่ระบุ' : formatNumber(group.memberCount)}</span>
           <span className="line-group-stat-label">สมาชิก</span>
         </div>
         <div className="line-group-stat">

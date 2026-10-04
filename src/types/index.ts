@@ -3,7 +3,7 @@
 // =============================================
 
 /** ระดับความเสี่ยงของข้อความ */
-export type RiskLevel = 'high' | 'medium' | 'low';
+export type RiskLevel = 'high' | 'medium' | 'low' | 'unknown';
 
 /** สถานะการดำเนินการ */
 export type ThreatStatus = 'blocked' | 'flagged' | 'reviewed' | 'pending';
@@ -15,7 +15,7 @@ export interface ThreatLog {
   senderName: string;
   senderId: string;
   riskLevel: RiskLevel;
-  confidence: number; // 0-100
+  confidence: number | null; // 0-100
   timestamp: string;  // ISO 8601
   status: ThreatStatus;
   category: string;   // e.g. "phishing", "investment_scam", "romance_scam"
@@ -27,8 +27,10 @@ export interface DashboardStats {
   totalScanned: number;
   threatsDetected: number;
   riskRate: number;       // เปอร์เซ็นต์
-  activeUsers: number;
-  suspiciousSenders: number; // จำนวน user ที่ส่งข้อความน่าสงสัย
+  riskLevels: Record<string, number>;
+  statuses: Record<string, number>;
+  trends: TrendDataPoint[];
+  updatedAt: string;
 }
 
 /** ข้อมูลกราฟแนวโน้ม */
@@ -49,11 +51,11 @@ export interface SidebarMenuItem {
 export interface LineGroup {
   id: string;
   name: string;
-  memberCount: number;
+  memberCount: number | null;
   threatsDetected: number;
   messagesScanned: number;
   status: 'active' | 'inactive';
-  joinedAt: string; // ISO 8601
+  joinedAt: string | null; // ISO 8601
   groupPictureUrl?: string;
 }
 

@@ -64,7 +64,7 @@ export default function Dataset() {
   const hamPercent = stats && stats.total > 0 ? ((stats.ham / stats.total) * 100).toFixed(1) : '0';
 
   return (
-    <div className="dataset-page">
+    <div className="dataset-page"><p role="status">หน้านี้ยังเป็นข้อมูลตัวอย่าง ไม่ใช่ประวัติการตรวจจริง</p>
       {/* Stat Cards */}
       <div className="overview-stat-cards">
         <div className="overview-stat-card">

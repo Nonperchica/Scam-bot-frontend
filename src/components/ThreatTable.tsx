@@ -18,7 +18,7 @@ const riskOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   blocked: { label: 'บล็อกแล้ว', className: 'badge badge--blocked' },
-  flagged: { label: 'แจ้งเตือน', className: 'badge badge--flagged' },
+  flagged: { label: 'พบความเสี่ยง', className: 'badge badge--flagged' },
   reviewed: { label: 'ตรวจสอบแล้ว', className: 'badge badge--reviewed' },
   pending: { label: 'รอดำเนินการ', className: 'badge badge--pending' },
 };
@@ -46,7 +46,7 @@ export default function ThreatTable({ logs, compact = false }: ThreatTableProps)
         cmp = (riskOrder[a.riskLevel] || 0) - (riskOrder[b.riskLevel] || 0);
         break;
       case 'confidence':
-        cmp = a.confidence - b.confidence;
+        cmp = (a.confidence ?? -1) - (b.confidence ?? -1);
         break;
     }
     return sortDir === 'asc' ? cmp : -cmp;
@@ -62,20 +62,21 @@ export default function ThreatTable({ logs, compact = false }: ThreatTableProps)
             <th>ID</th>
             <th>ข้อความ</th>
             <th>ผู้ส่ง</th>
-            <th className="sortable" onClick={() => handleSort('riskLevel')}>
-              ระดับเสี่ยง <ArrowUpDown size={12} />
+            <th aria-sort={sortKey === 'riskLevel' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+              <button className="table-sort-button" onClick={() => handleSort('riskLevel')}>ระดับเสี่ยง <ArrowUpDown size={12} /></button>
             </th>
-            <th className="sortable" onClick={() => handleSort('confidence')}>
-              ความมั่นใจ <ArrowUpDown size={12} />
+            <th aria-sort={sortKey === 'confidence' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+              <button className="table-sort-button" onClick={() => handleSort('confidence')}>ความมั่นใจ <ArrowUpDown size={12} /></button>
             </th>
             <th>หมวดหมู่</th>
-            <th className="sortable" onClick={() => handleSort('timestamp')}>
-              เวลา <ArrowUpDown size={12} />
+            <th aria-sort={sortKey === 'timestamp' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+              <button className="table-sort-button" onClick={() => handleSort('timestamp')}>เวลา <ArrowUpDown size={12} /></button>
             </th>
             <th>สถานะ</th>
           </tr>
         </thead>
         <tbody>
+          {display.length === 0 && <tr><td colSpan={8}>ไม่พบรายการความเสี่ยง</td></tr>}
           {display.map((log) => (
             <tr key={log.id}>
               <td className="cell-id">{log.id}</td>
@@ -92,9 +93,9 @@ export default function ThreatTable({ logs, compact = false }: ThreatTableProps)
                 <div className="confidence-bar-wrapper">
                   <div
                     className="confidence-bar"
-                    style={{ width: `${log.confidence}%` }}
+                    style={{ width: `${log.confidence == null ? 0 : log.confidence}%` }}
                   />
-                  <span className="confidence-text">{log.confidence}%</span>
+                  <span className="confidence-text">{log.confidence == null ? 'ไม่มีข้อมูล' : `${log.confidence}%`}</span>
                 </div>
               </td>
               <td>{getCategoryLabel(log.category)}</td>
