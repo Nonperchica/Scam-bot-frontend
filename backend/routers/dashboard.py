@@ -17,6 +17,11 @@ def authorize(authorization: str = Header(default="")):
 router = APIRouter(dependencies=[Depends(authorize)])
 
 
+@router.get("/auth/session")
+def auth_session():
+    return {"authenticated": True}
+
+
 def history():
     try:
         return sources_and_logs()

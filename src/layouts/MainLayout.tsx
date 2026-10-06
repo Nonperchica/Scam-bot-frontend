@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { useRef } from 'react';
 import { CalendarDays, ChevronRight, Menu, ShieldCheck, X } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
+import { logout } from '../services/api';
 
 const pages: Record<string, { title: string; subtitle: string; english: string }> = {
   '/': { title: 'ภาพรวมระบบ', subtitle: 'มองเห็นความเสี่ยง ดูแลทุกบทสนทนา', english: 'Overview' },
@@ -32,6 +33,7 @@ export default function MainLayout() {
               <span className="breadcrumb-brand">Workspace</span><ChevronRight size={14} /><span>{page.english}</span>
             </div>
             <div className="top-header-right">
+              <button className="button button-secondary" onClick={logout}>ออกจากระบบ</button>
               <span className="header-admin-label"><ShieldCheck size={15} /> Admin console</span>
               <div className="header-user"><div className="header-user-avatar">AD</div><div><strong>Admin</strong><small>ผู้ดูแลระบบ</small></div></div>
             </div>

@@ -16,6 +16,18 @@ def row(id, status="no_risk_found", scam=False, timestamp="2026-10-02T22:00:00+0
 
 
 class DashboardTests(unittest.TestCase):
+    def test_login_checks_token_without_reading_history(self):
+        client = TestClient(app)
+        with patch.dict(os.environ, {"DASHBOARD_API_TOKEN": "test-secret"}), patch("routers.dashboard.sources_and_logs") as history:
+            self.assertEqual(client.get("/api/auth/session").status_code, 401)
+            self.assertEqual(client.get("/api/auth/session", headers={"Authorization": "Bearer wrong"}).status_code, 401)
+            result = client.get("/api/auth/session", headers={"Authorization": "Bearer test-secret"})
+            self.assertEqual(result.status_code, 200)
+            self.assertEqual(result.json(), {"authenticated": True})
+            history.assert_not_called()
+        with patch.dict(os.environ, {"DASHBOARD_API_TOKEN": ""}):
+            self.assertEqual(client.get("/api/auth/session").status_code, 503)
+
     def test_bangkok_boundary_and_status_semantics(self):
         rows = [row("1", "risk_found", True, risk_level="high"),
                 row("2", "uncertain", False, risk_level="medium"),
