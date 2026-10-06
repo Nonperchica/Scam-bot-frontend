@@ -62,6 +62,26 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(threat["senderId"], "")
         self.assertEqual(threat["riskLevel"], "unknown")
 
+    def test_leave_hides_group_but_preserves_history_and_rejoin(self):
+        sources = [{"id": "s1", "source_type": "group", "display_name": "Test group", "is_active": True}]
+        rows = [row("1", "risk_found", True)]
+        client = TestClient(app)
+        with patch.dict(os.environ, {"DASHBOARD_API_TOKEN": "test-secret"}), patch("routers.dashboard.sources_and_logs", return_value=(sources, rows)):
+            headers = {"Authorization": "Bearer test-secret"}
+            before = client.get('/api/line-groups', headers=headers).json()
+            sources[0]['is_active'] = False
+            self.assertEqual(client.get('/api/line-groups', headers=headers).json(), [])
+            threats = client.get('/api/threats', headers=headers).json()
+            self.assertEqual(len(threats), 1)
+            self.assertEqual(threats[0]['lineGroupName'], 'Test group')
+            sources[0]['is_active'] = True
+            self.assertEqual(client.get('/api/line-groups', headers=headers).json(), before)
+
+    def test_group_list_requires_explicit_active_group(self):
+        sources = [{"id": str(i), "source_type": kind, "is_active": active}
+                   for i, (kind, active) in enumerate([('group', True), ('group', False), ('group', None), ('user', True), ('room', True)])]
+        self.assertEqual([g['id'] for g in live_data.groups(sources, [])], ['0'])
+
     def test_pagination_over_server_row_limit(self):
         class Query:
             def select(self, *args): return self

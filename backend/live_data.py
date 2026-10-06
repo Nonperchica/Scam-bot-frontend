@@ -67,7 +67,7 @@ def groups(sources, logs):
              "status": "active" if s.get("is_active") else "inactive",
              "messagesScanned": sum(r.get("source_id") == s["id"] for r in logs),
              "threatsDetected": sum(r.get("source_id") == s["id"] and is_threat(r) for r in logs)}
-            for s in sources if s.get("source_type") == "group"]
+            for s in sources if s.get("source_type") == "group" and s.get("is_active") is True]
 
 
 def threat_logs(sources, logs, source_id=None):
