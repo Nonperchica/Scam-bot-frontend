@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import dashboard
+from routers import dashboard, dataset
 from database import get_supabase_client
 
 
@@ -45,6 +45,7 @@ app.add_middleware(
 
 # Routers
 app.include_router(dashboard.router, prefix="/api")
+app.include_router(dataset.router, prefix="/api")
 
 
 @app.get("/", tags=["Health"])
