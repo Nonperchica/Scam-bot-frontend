@@ -10,10 +10,26 @@ import LineGroups from './pages/LineGroups';
 import GroupDashboard from './pages/GroupDashboard';
 import Dataset from './pages/Dataset';
 import DashboardAccess from './pages/DashboardAccess';
+import MiniLayout from './mini/MiniLayout';
+import MiniHistory from './mini/pages/MiniHistory';
+import MiniDetail from './mini/pages/MiniDetail';
+import MiniLessons from './mini/pages/MiniLessons';
+import MiniHelp from './mini/pages/MiniHelp';
+import MiniSettings from './mini/pages/MiniSettings';
+import MiniChat from './mini/pages/MiniChat';
 
 function App() {
   return (
     <Routes>
+      <Route path="/mini" element={<MiniLayout />}>
+        <Route index element={<MiniHistory />} />
+        <Route path="cases/:caseId" element={<MiniDetail />} />
+        <Route path="lessons" element={<MiniLessons />} />
+        <Route path="help" element={<MiniHelp />} />
+        <Route path="settings" element={<MiniSettings />} />
+        <Route path="chat" element={<MiniChat />} />
+        <Route path="*" element={<MiniHelp />} />
+      </Route>
       <Route element={<DashboardAccess />}>
       <Route path="/login" element={null} />
       <Route element={<MainLayout />}>
