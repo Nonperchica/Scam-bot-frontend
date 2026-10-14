@@ -1,8 +1,9 @@
 """Dashboard reads only. No writes to the bot's tables or schema."""
 import os
 import secrets
+from datetime import date
 from fastapi import APIRouter, Depends, Header, HTTPException
-from live_data import sources_and_logs, summary, groups, threat_logs
+from live_data import sources_and_logs, summary, groups, threat_logs, daily_report
 
 
 def authorize(authorization: str = Header(default="")):
@@ -39,6 +40,11 @@ def dashboard():
 def threats(source_id: str | None = None):
     sources, logs = history()
     return threat_logs(sources, logs, source_id)
+
+
+@router.get("/reports/daily")
+def daily_email_report(report_date: date | None = None):
+    return daily_report(*history(), report_date=report_date)
 
 
 @router.get("/line-groups")

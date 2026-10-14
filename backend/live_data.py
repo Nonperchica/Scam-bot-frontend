@@ -1,6 +1,6 @@
 """Read-only dashboard adapter for the existing bot history schema."""
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from database import get_supabase_client
 
@@ -58,6 +58,36 @@ def summary(logs, now=None):
         "riskLevels": dict(levels), "statuses": dict(statuses),
         "trends": [{"date": day, **counts} for day, counts in daily.items()],
         "updatedAt": now.isoformat(),
+    }
+
+
+def daily_report(sources, logs, report_date: date | None = None):
+    """สรุปวันตามเวลาไทย ส่งเฉพาะจำนวนและชื่อกลุ่มให้ n8n."""
+    report_date = report_date or (datetime.now(BKK) - timedelta(days=1)).date()
+    daily_logs = [r for r in logs
+                  if datetime.fromisoformat(r["received_at"].replace("Z", "+00:00")).astimezone(BKK).date() == report_date]
+    group_reports = []
+    # shortcut: รวมข้อมูลในหน่วยความจำ; ย้ายไป SQL aggregate เมื่อประวัติมีขนาดใหญ่
+    for source in sources:
+        if source.get("source_type") != "group":
+            continue
+        group_logs = [r for r in daily_logs if r.get("source_id") == source["id"]]
+        if group_logs:
+            group_reports.append({
+                "name": source.get("display_name") or "กลุ่มที่ยังไม่ระบุชื่อ",
+                "totalMessages": len(group_logs),
+                "threatsDetected": sum(is_threat(r) for r in group_logs),
+                "failedChecks": sum(r.get("detection_status") == "error" for r in group_logs),
+            })
+    return {
+        "date": report_date.isoformat(), "timezone": "Asia/Bangkok",
+        "totalMessages": len(daily_logs),
+        "threatsDetected": sum(is_threat(r) for r in daily_logs),
+        "failedChecks": sum(r.get("detection_status") == "error" for r in daily_logs),
+        "fallbackChecks": sum(r.get("detection_status") == "fallback" for r in daily_logs),
+        "warningFailures": sum(r.get("warning_attempted") is True and r.get("warning_sent") is False
+                               for r in daily_logs),
+        "groups": group_reports,
     }
 
 
