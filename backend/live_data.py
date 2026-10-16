@@ -35,17 +35,24 @@ def is_threat(row):
     return row.get("is_scam") is True and row.get("detection_status") not in {"error", "conversation", "uncertain"}
 
 
-def summary(logs, now=None):
+def summary(logs, now=None, period="week", target=None):
     now = now or datetime.now(BKK)
-    start = now.astimezone(BKK).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=6)
-    end = start + timedelta(days=7)
-    daily = {(start + timedelta(days=i)).date().isoformat(): {"totalMessages": 0, "suspiciousMessages": 0} for i in range(7)}
+    today = now.astimezone(BKK).replace(hour=0, minute=0, second=0, microsecond=0)
+    if period == "day":
+        start = datetime.combine(target, datetime.min.time(), BKK) if target else today
+        end = start + timedelta(days=1)
+        buckets = {f"{hour:02d}:00": {"totalMessages": 0, "suspiciousMessages": 0} for hour in range(24)}
+    else:
+        start = today - timedelta(days=6) if period == "week" else (datetime.combine(target, datetime.min.time(), BKK) if target else today).replace(day=1)
+        end = today + timedelta(days=1) if period == "week" else (start.replace(year=start.year + 1, month=1) if start.month == 12 else start.replace(month=start.month + 1))
+        buckets = {(start + timedelta(days=i)).date().isoformat(): {"totalMessages": 0, "suspiciousMessages": 0}
+                   for i in range((end - start).days)}
     recent = []
     for row in logs:
         ts = datetime.fromisoformat(row["received_at"].replace("Z", "+00:00")).astimezone(BKK)
         if start <= ts < end:
             recent.append(row)
-            bucket = daily[ts.date().isoformat()]
+            bucket = buckets[f"{ts.hour:02d}:00" if period == "day" else ts.date().isoformat()]
             bucket["totalMessages"] += 1
             bucket["suspiciousMessages"] += int(is_threat(row))
     threats = sum(is_threat(r) for r in recent)
@@ -56,7 +63,7 @@ def summary(logs, now=None):
         "totalScanned": len(recent), "threatsDetected": threats,
         "riskRate": round(threats / len(recent) * 100, 2) if recent else 0,
         "riskLevels": dict(levels), "statuses": dict(statuses),
-        "trends": [{"date": day, **counts} for day, counts in daily.items()],
+        "trends": [{"date": day, **counts} for day, counts in buckets.items()],
         "updatedAt": now.isoformat(),
     }
 
@@ -103,7 +110,8 @@ def groups(sources, logs):
 def threat_logs(sources, logs, source_id=None):
     names = {s["id"]: s.get("display_name") for s in sources}
     return [{"id": r["id"], "message": r.get("message_text") or r.get("message_preview") or "",
-             "senderName": "ไม่ระบุผู้ส่ง", "senderId": "", "riskLevel": r.get("risk_level") or "unknown",
+             "senderName": r.get("sender_display_name") or ("ผู้ใช้ LINE" if r.get("sender_user_id") else "ไม่ระบุผู้ส่ง"),
+             "senderId": r.get("sender_user_id") or "", "riskLevel": r.get("risk_level") or "unknown",
              "confidence": None, "timestamp": r["received_at"], "status": "flagged",
              "category": "ยังไม่ระบุ", "lineGroupName": names.get(r.get("source_id"))}
             for r in sorted(logs, key=lambda r: r["received_at"], reverse=True)

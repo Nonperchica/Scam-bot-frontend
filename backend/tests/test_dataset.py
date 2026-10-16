@@ -30,15 +30,50 @@ class DatasetTests(unittest.TestCase):
         logs = [{"id": "a", "detection_status": "risk_found", "message_text": "risk"},
                 {"id": "b", "detection_status": "uncertain", "message_text": "unsure"},
                 {"id": "c", "detection_status": "error", "message_text": "error"}]
-        with patch.object(dataset, 'sources_and_logs', return_value=([], logs)), patch.object(dataset, 'read_all', return_value=[{'candidate_id': 'a'}]):
+        def stored_rows(table, columns):
+            return [{'candidate_id': 'a'}] if table == 'dataset_reviews' else []
+        with patch.object(dataset, 'sources_and_logs', return_value=([], logs)), patch.object(dataset, 'read_all', side_effect=stored_rows):
             result = dataset.candidates()
         self.assertEqual([row['id'] for row in result], ['b'])
-        self.assertIsNone(result[0]['similarity'])
+        self.assertNotIn('similarity', result[0])
+
+    def test_queue_excludes_messages_already_in_dataset(self):
+        logs = [
+            {'id': 'a', 'detection_status': 'risk_found', 'message_text': ' already saved '},
+            {'id': 'b', 'detection_status': 'uncertain', 'message_text': 'new message'},
+        ]
+        def stored_rows(table, columns):
+            return [{'thai_text': 'already saved'}] if table == 'scam_dataset' else []
+        with patch.object(dataset, 'sources_and_logs', return_value=([], logs)), \
+             patch.object(dataset, 'read_all', side_effect=stored_rows):
+            result = dataset.candidates()
+        self.assertEqual([row['id'] for row in result], ['b'])
 
     def test_invalid_label_and_empty_message_rejected(self):
         url = '/api/dataset/candidates/00000000-0000-0000-0000-000000000001/approve'
         for body in ({'message': 'sample', 'label': 'invalid'}, {'message': '   ', 'label': 'spam'}):
             self.assertEqual(self.client.post(url, headers=self.headers, json=body).status_code, 422)
+
+    def test_similarity_preview_only_reads_nearest_example(self):
+        db = Mock()
+        db.rpc.return_value.execute.return_value.data = [
+            {'thai_text': 'existing', 'label': 'spam', 'similarity': 0.87}
+        ]
+        with patch.object(dataset, 'get_supabase_client', return_value=db), \
+             patch.object(dataset, 'candidates', return_value=[{'id': '00000000-0000-0000-0000-000000000001'}]), \
+             patch.object(dataset, 'embedding', return_value=[0.1] * 768):
+            result = dataset.preview_similarity('00000000-0000-0000-0000-000000000001', dataset.Review(message='new'))
+        self.assertEqual(result['match'], {'message': 'existing', 'label': 'spam', 'similarity': 87})
+        self.assertEqual([call.args[0] for call in db.rpc.call_args_list], ['match_scam'])
+
+    def test_similarity_preview_without_examples_returns_null(self):
+        db = Mock()
+        db.rpc.return_value.execute.return_value.data = []
+        with patch.object(dataset, 'get_supabase_client', return_value=db), \
+             patch.object(dataset, 'candidates', return_value=[{'id': '00000000-0000-0000-0000-000000000001'}]), \
+             patch.object(dataset, 'embedding', return_value=[0.1] * 768):
+            result = dataset.preview_similarity('00000000-0000-0000-0000-000000000001', dataset.Review(message='new'))
+        self.assertIsNone(result['match'])
 
     def test_retry_returns_saved_entry_without_embedding(self):
         db = Mock()

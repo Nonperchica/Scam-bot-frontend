@@ -29,22 +29,6 @@ export function formatNumber(num: number): string {
 }
 
 /**
- * คืนค่าสี CSS ตามระดับความเสี่ยง
- */
-export function getRiskColor(level: RiskLevel): string {
-  switch (level) {
-    case 'high':
-      return 'var(--color-risk-high)';
-    case 'medium':
-      return 'var(--color-risk-medium)';
-    case 'low':
-      return 'var(--color-risk-low)';
-    default:
-      return 'var(--color-text-secondary)';
-  }
-}
-
-/**
  * คืนค่า label ภาษาไทยสำหรับระดับความเสี่ยง
  */
 export function getRiskLabel(level: RiskLevel): string {

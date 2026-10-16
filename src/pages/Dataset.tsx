@@ -4,13 +4,14 @@ import { request } from '../services/api';
 import type { DatasetEntry, DatasetLabel } from '../types';
 import './Dataset.css';
 
-interface Candidate { id: string; message: string; label: DatasetLabel | null; reason: string; similarity: number | null; analysis: string; source: string; category: string; occurrences: number }
+interface Candidate { id: string; message: string; label: DatasetLabel | null; reason: string; analysis: string; source: string; category: string; occurrences: number }
 interface HistoryEntry extends DatasetEntry { reviewId: string; approvedAt: string }
 interface MatchPreview { confirmation: string; match: { message: string; label: DatasetLabel; similarity: number }; message: string; label: DatasetLabel | null }
+interface SimilarityPreview { message: string; match: MatchPreview['match'] | null }
 const examples: Candidate[] = [
-  { id: 'EX-001', message: 'รับงานกดไลก์ รายได้วันละ 2,000 บาท เติมเงินเปิดภารกิจก่อนเริ่มงาน', label: null, reason: 'ความคล้ายต่ำและพบความเสี่ยง', similarity: 48, analysis: 'มีการเรียกเก็บเงินก่อนเริ่มงาน', source: 'LINE', category: 'หลอกทำงาน', occurrences: 3 },
-  { id: 'EX-002', message: 'บัญชีคุณเกี่ยวข้องกับคดี กรุณาโอนเงินไปบัญชีตรวจสอบ', label: null, reason: 'ความคล้ายต่ำและพบความเสี่ยง', similarity: 56, analysis: 'แอบอ้างเจ้าหน้าที่และขอให้โอนเงิน', source: 'LINE', category: 'แอบอ้างเจ้าหน้าที่', occurrences: 1 },
-  { id: 'EX-003', message: 'พรุ่งนี้ช่วยโอนค่าสินค้าตามที่ตกลงด้วยนะครับ', label: null, reason: 'ระบบไม่แน่ใจ', similarity: 72, analysis: 'บริบทไม่เพียงพอที่จะสรุปความเสี่ยง', source: 'LINE', category: 'ทั่วไป', occurrences: 1 },
+  { id: 'EX-001', message: 'รับงานกดไลก์ รายได้วันละ 2,000 บาท เติมเงินเปิดภารกิจก่อนเริ่มงาน', label: null, reason: 'พบความเสี่ยง รอตรวจทาน', analysis: 'มีการเรียกเก็บเงินก่อนเริ่มงาน', source: 'LINE', category: 'หลอกทำงาน', occurrences: 3 },
+  { id: 'EX-002', message: 'บัญชีคุณเกี่ยวข้องกับคดี กรุณาโอนเงินไปบัญชีตรวจสอบ', label: null, reason: 'พบความเสี่ยง รอตรวจทาน', analysis: 'แอบอ้างเจ้าหน้าที่และขอให้โอนเงิน', source: 'LINE', category: 'แอบอ้างเจ้าหน้าที่', occurrences: 1 },
+  { id: 'EX-003', message: 'พรุ่งนี้ช่วยโอนค่าสินค้าตามที่ตกลงด้วยนะครับ', label: null, reason: 'ระบบไม่แน่ใจ', analysis: 'บริบทไม่เพียงพอที่จะสรุปความเสี่ยง', source: 'LINE', category: 'ทั่วไป', occurrences: 1 },
 ];
 
 export default function Dataset() {
@@ -29,6 +30,8 @@ export default function Dataset() {
   const [notice, setNotice] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previews, setPreviews] = useState<Record<string, MatchPreview>>({});
+  const [comparisons, setComparisons] = useState<Record<string, SimilarityPreview>>({});
+  const [comparingId, setComparingId] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     let active = true;
@@ -63,9 +66,36 @@ export default function Dataset() {
   const picked = visible.filter(row => selected.includes(row.id));
   const all = visible.length > 0 && visible.every(row => selected.includes(row.id));
   const update = (id: string, changes: Partial<Candidate>) => setRows(previous => previous.map(row => row.id === id ? { ...row, ...changes } : row));
+  async function compare(row: Candidate) {
+    if (!row.message.trim()) return;
+    setComparingId(row.id);
+    setErrors(previous => ({ ...previous, [row.id]: '' }));
+    try {
+      if (demo) {
+        setComparisons(previous => ({ ...previous, [row.id]: { message: row.message.trim(), match: null } }));
+        return;
+      }
+      const base = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+      const token = sessionStorage.getItem('dashboardToken');
+      const response = await fetch(`${base}/dataset/candidates/${encodeURIComponent(row.id)}/similarity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ message: row.message.trim() }),
+        signal: AbortSignal.timeout(60000),
+      });
+      if (!response.ok) throw new Error('เปรียบเทียบไม่สำเร็จ กรุณาลองใหม่');
+      const result = await response.json() as { match: MatchPreview['match'] | null };
+      setComparisons(previous => ({ ...previous, [row.id]: { message: row.message.trim(), match: result.match } }));
+    } catch (error) {
+      setErrors(previous => ({ ...previous, [row.id]: error instanceof Error ? error.message : 'เปรียบเทียบไม่สำเร็จ' }));
+    } finally {
+      setComparingId(null);
+    }
+  }
   async function review(items: Candidate[], action: 'approve' | 'skip', confirm = false) {
     if (busy || !items.length) return;
     if (action === 'approve' && items.some(row => !row.label || !row.message.trim())) { setNotice('กรุณาระบุข้อความและเลือก Spam หรือ Ham ให้ครบ'); return; }
+    if (action === 'approve' && items.some(row => comparisons[row.id]?.message !== row.message.trim())) { setNotice('กรุณาเปรียบเทียบข้อความกับชุดข้อมูลก่อนบันทึก'); return; }
     setBusy(true); setNotice(''); let done = 0;
     for (const row of items) {
       try {
@@ -100,8 +130,9 @@ export default function Dataset() {
     const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = demo ? 'dataset-example.csv' : 'dataset.csv'; link.click(); URL.revokeObjectURL(url);
   }
   return <div className="ds-workspace">
-    <header className="ds-heading"><div><h1>Dataset</h1><p>ตรวจสอบและจัดการตัวอย่างข้อความ</p></div><label><input type="checkbox" checked={demo} disabled={busy} onChange={event => setDemo(event.target.checked)} /> ข้อมูลตัวอย่าง</label></header>
+    <header className="ds-heading"><div><h1>คิวตรวจทานข้อมูล</h1><p>เปรียบเทียบข้อความใหม่กับตัวอย่างที่บันทึกไว้ ก่อนเลือกว่าจะเพิ่มเป็น Spam หรือ Ham</p></div><label><input type="checkbox" checked={demo} disabled={busy} onChange={event => setDemo(event.target.checked)} /> ข้อมูลตัวอย่าง</label></header>
     {demo && <p className="ds-banner">โหมดตัวอย่าง การอนุมัติและข้ามรายการไม่มีการบันทึกเข้า Supabase</p>}
+    <p className="ds-guidance">เปอร์เซ็นต์แสดงความคล้ายของข้อความกับตัวอย่างในฐานข้อมูล ไม่ใช่โอกาสที่ผู้ส่งเป็นสแกมเมอร์ ผู้ตรวจทานต้องพิจารณาบริบทและเลือกป้ายกำกับเองก่อนบันทึก</p>
     <div className="ds-stats"><div><span>รอพิจารณา</span><strong>{loading ? '—' : rows.length}</strong></div></div>
     <div className="ds-tabs" role="tablist" aria-label="รายการ Dataset">{[['review', 'รอพิจารณา'], ['saved', 'ประวัติการอนุมัติ']].map(([value, label]) => <button key={value} role="tab" aria-selected={tab === value} onClick={() => { setTab(value); setFilter('all'); setQuery(''); setPage(1); }}>{label}</button>)}</div>
     <div className="ds-toolbar"><label className="ds-search"><Search size={18} /><input aria-label="ค้นหาข้อความ" placeholder="ค้นหาข้อความ" value={query} onChange={event => setQuery(event.target.value)} /></label><select aria-label="กรอง Label" value={filter} onChange={event => setFilter(event.target.value)}><option value="all">ทุก Label</option><option value="spam">Spam</option><option value="ham">Ham</option>{tab === 'review' && <option value="unlabeled">ยังไม่ระบุ</option>}</select><button title="โหลดรายการใหม่" aria-label="โหลดรายการใหม่" disabled={busy || loading} onClick={() => setRevision(value => value + 1)}><RefreshCw size={18} /></button>{tab === 'saved' && <button disabled={!saved.length || loading} onClick={exportCsv}><Download size={16} />ส่งออก CSV</button>}</div>
@@ -109,12 +140,15 @@ export default function Dataset() {
     {loading ? <div className="ds-empty">กำลังโหลดรายการ...</div> : tab === 'review' ? <>
       <div className="ds-selection"><label><input type="checkbox" checked={all} disabled={busy || !visible.length} onChange={event => setSelected(event.target.checked ? [...new Set([...selected, ...visible.map(row => row.id)])] : selected.filter(id => !visible.some(row => row.id === id)))} /> เลือกทั้งหมดที่แสดง</label><span>{visible.length} รายการ</span></div>
       {!visible.length && <div className="ds-empty">ไม่พบรายการรอพิจารณา</div>}
-      {visible.map(row => <article className="ds-row" key={row.id}><input type="checkbox" aria-label={`เลือก ${row.id}`} checked={selected.includes(row.id)} disabled={busy} onChange={event => setSelected(previous => event.target.checked ? [...previous, row.id] : previous.filter(id => id !== row.id))} /><div><div className="ds-meta"><span>{row.id} · {row.source} · พบ {row.occurrences} ครั้ง</span><span className="ds-reason">{row.reason}</span></div><textarea aria-label={`ข้อความ ${row.id}`} value={row.message} disabled={busy} onChange={event => update(row.id, { message: event.target.value })} /><p className="ds-analysis">{row.analysis}</p>{errors[row.id] && <p className="ds-error" role="alert">{errors[row.id]}</p>}</div><div className="ds-review"><span>ความคล้าย <strong>{row.similarity == null ? 'ไม่ระบุ' : `${row.similarity}%`}</strong></span><div className="ds-labels">{(['spam', 'ham'] as DatasetLabel[]).map(label => <button key={label} aria-pressed={row.label === label} disabled={busy} className={row.label === label ? `active ${label}` : ''} onClick={() => update(row.id, { label: row.label === label ? null : label })}>{label === 'spam' ? 'Spam' : 'Ham'}</button>)}</div><div className="ds-actions"><button disabled={busy || !row.label || !row.message.trim()} onClick={() => void review([row], 'approve')}><Check size={16} />อนุมัติ</button><button disabled={busy} onClick={() => void review([row], 'skip')}><X size={16} />ข้าม</button></div></div></article>)}
+      {visible.map(row => {
+        const comparison = comparisons[row.id]?.message === row.message.trim() ? comparisons[row.id] : null;
+        return <article className="ds-row" key={row.id}><input type="checkbox" aria-label={`เลือก ${row.id}`} checked={selected.includes(row.id)} disabled={busy} onChange={event => setSelected(previous => event.target.checked ? [...previous, row.id] : previous.filter(id => id !== row.id))} /><div><div className="ds-meta"><span>{row.id} · {row.source} · พบ {row.occurrences} ครั้ง</span><span className="ds-reason">{row.reason}</span></div><textarea aria-label={`ข้อความ ${row.id}`} value={row.message} disabled={busy || comparingId === row.id} onChange={event => update(row.id, { message: event.target.value })} /><p className="ds-analysis">{row.analysis}</p>{comparison && <div className="ds-comparison"><strong>{comparison.match ? `คล้ายตัวอย่างเดิม ${comparison.match.similarity}%` : demo ? 'โหมดตัวอย่าง: ไม่มีการเปรียบเทียบกับฐานจริง' : 'ยังไม่มีตัวอย่างในฐานข้อมูลให้เปรียบเทียบ'}</strong>{comparison.match && <><p>ตัวอย่างเดิม: {comparison.match.message}</p><small>ป้ายกำกับเดิม: {comparison.match.label === 'spam' ? 'Spam' : 'Ham'} — ใช้ประกอบการพิจารณา ไม่ใช่คำตัดสิน</small></>}</div>}{errors[row.id] && <p className="ds-error" role="alert">{errors[row.id]}</p>}</div><div className="ds-review"><button disabled={busy || comparingId !== null || !row.message.trim()} onClick={() => void compare(row)}>{comparingId === row.id ? 'กำลังเปรียบเทียบ...' : comparison ? 'เปรียบเทียบใหม่' : 'เปรียบเทียบกับฐานข้อมูล'}</button><div className="ds-labels">{(['spam', 'ham'] as DatasetLabel[]).map(label => <button key={label} aria-pressed={row.label === label} disabled={busy} className={row.label === label ? `active ${label}` : ''} onClick={() => update(row.id, { label: row.label === label ? null : label })}>{label === 'spam' ? 'Spam' : 'Ham'}</button>)}</div><div className="ds-actions"><button disabled={busy || !comparison || !row.label || !row.message.trim()} onClick={() => void review([row], 'approve')}><Check size={16} />บันทึกตัวอย่าง</button><button disabled={busy} onClick={() => void review([row], 'skip')}><X size={16} />ข้าม</button></div></div></article>;
+      })}
       {visible.filter(row => previews[row.id]?.message === row.message.trim() && previews[row.id]?.label === row.label).map(row => {
         const preview = previews[row.id];
-        return <section className="ds-notice" key={`match-${row.id}`}><strong>เปรียบเทียบก่อนเพิ่ม · {row.id}</strong><p>ข้อความที่อนุมัติ: {row.message}</p><p>ตัวอย่างที่ใกล้ที่สุดในฐาน: {preview.match.message}</p><p>Label เดิม: {preview.match.label} · ความคล้าย: {preview.match.similarity}%</p><div className="ds-actions"><button disabled={busy} onClick={() => void review([row], 'skip')}><X size={16} />ข้ามเพราะซ้ำ</button><button disabled={busy} onClick={() => void review([row], 'approve', true)}><Check size={16} />ยืนยันเพิ่มเป็นตัวอย่างใหม่</button></div></section>;
+        return <section className="ds-notice" key={`match-${row.id}`}><strong>ยืนยันก่อนบันทึก · {row.id}</strong><p>ข้อความใหม่: {row.message}</p><p>ตัวอย่างที่ใกล้ที่สุดในฐาน: {preview.match.message}</p><p>ป้ายกำกับเดิม: {preview.match.label} · ความคล้ายของข้อความ: {preview.match.similarity}% (ไม่ใช่ความน่าจะเป็นว่าเป็นสแกม)</p><div className="ds-actions"><button disabled={busy} onClick={() => void review([row], 'skip')}><X size={16} />ข้าม</button><button disabled={busy} onClick={() => void review([row], 'approve', true)}><Check size={16} />ยืนยันบันทึกตัวอย่าง</button></div></section>;
       })}
-      <div className="ds-bottom"><span>เลือก {picked.length} รายการที่แสดง</span><button disabled={busy || !picked.length} onClick={() => void review(picked, 'skip')}><X size={16} />ข้ามที่เลือก</button><button className="ds-primary" disabled={busy || !picked.length} onClick={() => void review(picked, 'approve')}><Check size={16} />{busy ? 'กำลังประมวลผล' : 'อนุมัติที่เลือก'}</button></div>
+      <div className="ds-bottom"><span>เลือก {picked.length} รายการที่แสดง</span><button disabled={busy || !picked.length} onClick={() => void review(picked, 'skip')}><X size={16} />ข้ามที่เลือก</button><button className="ds-primary" disabled={busy || !picked.length || picked.some(row => comparisons[row.id]?.message !== row.message.trim() || !row.label)} onClick={() => void review(picked, 'approve')}><Check size={16} />{busy ? 'กำลังประมวลผล' : 'บันทึกตัวอย่างที่เลือก'}</button></div>
     </> : historyLoading ? <div className="ds-empty">กำลังโหลดประวัติ...</div> : <><div className="ds-table"><table><thead><tr><th>ID Dataset</th><th>ข้อความ</th><th>Label</th><th>วันที่อนุมัติ</th></tr></thead><tbody>{saved.map(row => <tr key={row.reviewId}><td>{row.id}</td><td>{row.message}</td><td className={row.label}>{row.label === 'spam' ? 'Spam' : 'Ham'}</td><td>{new Date(row.approvedAt).toLocaleString('th-TH')}</td></tr>)}</tbody></table>{!saved.length && <div className="ds-empty">ไม่พบประวัติการอนุมัติในหน้านี้</div>}</div><div className="ds-bottom"><span>หน้า {page} / {Math.max(1, Math.ceil(historyTotal / 25))} · {historyTotal} รายการ</span><button disabled={page === 1} onClick={() => setPage(value => value - 1)}>ก่อนหน้า</button><button disabled={page * 25 >= historyTotal} onClick={() => setPage(value => value + 1)}>ถัดไป</button></div></>}
   </div>;
 }

@@ -12,7 +12,7 @@ interface ThreatTableProps {
   compact?: boolean; // true = แสดงแค่ 5 แถว สำหรับหน้า Overview
 }
 
-type SortKey = 'timestamp' | 'riskLevel' | 'confidence';
+type SortKey = 'timestamp' | 'riskLevel';
 
 const riskOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
 
@@ -45,9 +45,6 @@ export default function ThreatTable({ logs, compact = false }: ThreatTableProps)
       case 'riskLevel':
         cmp = (riskOrder[a.riskLevel] || 0) - (riskOrder[b.riskLevel] || 0);
         break;
-      case 'confidence':
-        cmp = (a.confidence ?? -1) - (b.confidence ?? -1);
-        break;
     }
     return sortDir === 'asc' ? cmp : -cmp;
   });
@@ -65,9 +62,6 @@ export default function ThreatTable({ logs, compact = false }: ThreatTableProps)
             <th aria-sort={sortKey === 'riskLevel' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
               <button className="table-sort-button" onClick={() => handleSort('riskLevel')}>ระดับเสี่ยง <ArrowUpDown size={12} /></button>
             </th>
-            <th aria-sort={sortKey === 'confidence' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
-              <button className="table-sort-button" onClick={() => handleSort('confidence')}>ความมั่นใจ <ArrowUpDown size={12} /></button>
-            </th>
             <th>หมวดหมู่</th>
             <th aria-sort={sortKey === 'timestamp' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
               <button className="table-sort-button" onClick={() => handleSort('timestamp')}>เวลา <ArrowUpDown size={12} /></button>
@@ -76,27 +70,18 @@ export default function ThreatTable({ logs, compact = false }: ThreatTableProps)
           </tr>
         </thead>
         <tbody>
-          {display.length === 0 && <tr><td colSpan={8}>ไม่พบรายการความเสี่ยง</td></tr>}
+          {display.length === 0 && <tr><td colSpan={7}>ไม่พบรายการความเสี่ยง</td></tr>}
           {display.map((log) => (
             <tr key={log.id}>
               <td className="cell-id">{log.id}</td>
               <td className="cell-message" title={log.message}>
                 {truncateText(log.message, compact ? 40 : 60)}
               </td>
-              <td>{log.senderName}</td>
+              <td title={log.senderId || undefined}>{log.senderName}{log.senderId && <small className="sender-id">{log.senderId.slice(-8)}</small>}</td>
               <td>
                 <span className={`badge badge--risk-${log.riskLevel}`}>
                   {getRiskLabel(log.riskLevel)}
                 </span>
-              </td>
-              <td>
-                <div className="confidence-bar-wrapper">
-                  <div
-                    className="confidence-bar"
-                    style={{ width: `${log.confidence == null ? 0 : log.confidence}%` }}
-                  />
-                  <span className="confidence-text">{log.confidence == null ? 'ไม่มีข้อมูล' : `${log.confidence}%`}</span>
-                </div>
               </td>
               <td>{getCategoryLabel(log.category)}</td>
               <td className="cell-time">{formatDate(log.timestamp)}</td>

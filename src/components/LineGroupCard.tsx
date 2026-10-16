@@ -24,10 +24,10 @@ export default function LineGroupCard({ group, index }: LineGroupCardProps) {
     <div
       className="line-group-card line-group-card--clickable"
       style={{ animationDelay: `${index * 80}ms` }}
-      onClick={() => navigate(`/line-groups/${group.id}`)}
+      onClick={() => navigate(`/line-groups/${group.id}/dashboard`)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/line-groups/${group.id}`); }}
+      onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/line-groups/${group.id}/dashboard`); }}
     >
       {/* Header: Group name + status */}
       <div className="line-group-card-header">
@@ -55,12 +55,12 @@ export default function LineGroupCard({ group, index }: LineGroupCardProps) {
         <div className="line-group-stat">
           <ShieldAlert size={14} className="line-group-stat-icon line-group-stat-icon--danger" />
           <span className="line-group-stat-value">{formatNumber(group.threatsDetected)}</span>
-          <span className="line-group-stat-label">ภัยคุกคาม</span>
+          <span className="line-group-stat-label">ข้อความที่มีความเสี่ยง</span>
         </div>
         <div className="line-group-stat">
           <ScanSearch size={14} className="line-group-stat-icon line-group-stat-icon--accent" />
           <span className="line-group-stat-value">{formatNumber(group.messagesScanned)}</span>
-          <span className="line-group-stat-label">สแกนแล้ว</span>
+          <span className="line-group-stat-label">จำนวนข้อความทั้งหมดในกลุ่ม</span>
         </div>
       </div>
 

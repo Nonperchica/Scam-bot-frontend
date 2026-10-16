@@ -17,15 +17,19 @@ import {
 } from 'recharts';
 import { ArrowLeft, Users, ShieldAlert, ScanSearch, MessageSquare } from 'lucide-react';
 import StatCard from '../components/StatCard';
+import PeriodSelector from '../components/PeriodSelector';
 import { fetchGroupById, fetchGroupTrendData, fetchGroupThreatLogs } from '../services/api';
 import { formatNumber } from '../utils/formatters';
-import type { LineGroup, TrendDataPoint, ThreatLog } from '../types';
+import { bangkokDate, bangkokToday } from '../utils/dashboardDate';
+import type { LineGroup, DashboardStats, ThreatLog, DashboardPeriod } from '../types';
 
 export default function GroupDashboard() {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const [group, setGroup] = useState<LineGroup | null>(null);
-  const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
+  const [summary, setSummary] = useState<DashboardStats | null>(null);
+  const [period, setPeriod] = useState<DashboardPeriod>('week');
+  const [target, setTarget] = useState(bangkokToday);
   const [threatLogs, setThreatLogs] = useState<ThreatLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,10 +45,10 @@ export default function GroupDashboard() {
         }
         setGroup(g);
         const [trend, threats] = await Promise.all([
-          fetchGroupTrendData(groupId),
+          fetchGroupTrendData(groupId, period, target),
           fetchGroupThreatLogs(groupId),
         ]);
-        setTrendData(trend);
+        setSummary(trend);
         setThreatLogs(threats);
       } catch {
         setError('โหลดข้อมูลจริงไม่สำเร็จ กรุณาตรวจการเชื่อมต่อหรือรหัสเข้า Dashboard');
@@ -53,7 +57,7 @@ export default function GroupDashboard() {
       }
     }
     loadData();
-  }, [groupId, navigate]);
+  }, [groupId, navigate, period, target]);
 
   if (error) return <DataError message={error} />;
 
@@ -66,9 +70,12 @@ export default function GroupDashboard() {
     );
   }
 
-  const riskRate = group.messagesScanned > 0
-    ? ((group.threatsDetected / group.messagesScanned) * 100).toFixed(2)
-    : '0';
+  const riskRate = summary?.riskRate.toFixed(2) ?? '0';
+  const periodThreats = threatLogs.filter(log => {
+    if (!summary?.trends.length) return false;
+    const day = bangkokDate(log.timestamp);
+    return period === 'day' ? day === target : day >= summary.trends[0].date && day <= summary.trends[summary.trends.length - 1].date;
+  });
 
   const tooltipStyle = {
     backgroundColor: '#ffffff',
@@ -118,23 +125,25 @@ export default function GroupDashboard() {
         </div>
       </div>
 
+      <div className="group-period-bar"><span>{period === 'day' ? target : period === 'week' ? '7 วันล่าสุด' : target.slice(0, 7)}</span><PeriodSelector value={period} onChange={value => { setPeriod(value); setLoading(true); setError(''); }} target={target} onTargetChange={value => { setTarget(value); setLoading(true); setError(''); }} /></div>
+
       {/* Stat Cards */}
       <div className="stat-cards-grid group-stats-grid">
         <StatCard
-          title="สมาชิกในกลุ่ม"
+          title="จำนวนสมาชิกในกลุ่ม"
           value={group.memberCount == null ? 'ไม่ระบุ' : formatNumber(group.memberCount)}
           icon={<Users size={24} />}
           accentColor="var(--color-accent)"
         />
         <StatCard
-          title="ข้อความที่สแกน"
-          value={formatNumber(group.messagesScanned)}
+          title="จำนวนข้อความทั้งหมดในกลุ่ม"
+          value={formatNumber(summary?.totalScanned ?? 0)}
           icon={<MessageSquare size={24} />}
           accentColor="var(--color-info)"
         />
         <StatCard
-          title="ภัยคุกคามที่ตรวจพบ"
-          value={formatNumber(group.threatsDetected)}
+          title="ข้อความที่มีความเสี่ยง"
+          value={formatNumber(summary?.threatsDetected ?? 0)}
           icon={<ShieldAlert size={24} />}
           accentColor="var(--color-risk-high)"
         />
@@ -156,7 +165,7 @@ export default function GroupDashboard() {
           </div>
           <div className="chart-container">
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={trendData}>
+              <LineChart data={summary?.trends ?? []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
                 <XAxis dataKey="date" stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
@@ -188,7 +197,7 @@ export default function GroupDashboard() {
       </div>
 
       {/* Threat Logs Table */}
-      {threatLogs.length > 0 && (
+      {periodThreats.length > 0 && (
         <div className="chart-card" style={{ marginTop: 'var(--space-lg)' }}>
           <div className="chart-card-header">
             <div className="chart-card-header-left">
@@ -202,26 +211,24 @@ export default function GroupDashboard() {
                   <th>ข้อความ</th>
                   <th>ผู้ส่ง</th>
                   <th>ระดับความเสี่ยง</th>
-                  <th>ความมั่นใจ</th>
                   <th>สถานะ</th>
                   <th>วันที่</th>
                 </tr>
               </thead>
               <tbody>
-                {threatLogs.map((log) => (
+                {periodThreats.map((log) => (
                   <tr key={log.id}>
                     <td>
                       <span className="threat-message-preview">
                         {log.message.length > 60 ? log.message.slice(0, 60) + '...' : log.message}
                       </span>
                     </td>
-                    <td>{log.senderName}</td>
+                    <td title={log.senderId || undefined}>{log.senderName}{log.senderId && <small className="sender-id">{log.senderId.slice(-8)}</small>}</td>
                     <td>
                       <span className={`risk-badge risk-badge--${log.riskLevel}`}>
                         {riskLevelLabel[log.riskLevel]}
                       </span>
                     </td>
-                    <td>{log.confidence == null ? 'ไม่มีข้อมูล' : `${log.confidence}%`}</td>
                     <td>
                       <span className={`status-badge status-badge--${log.status}`}>
                         {statusLabel[log.status]}
@@ -242,7 +249,7 @@ export default function GroupDashboard() {
         </div>
       )}
 
-      {threatLogs.length === 0 && (
+      {periodThreats.length === 0 && (
         <div className="chart-card" style={{ marginTop: 'var(--space-lg)', textAlign: 'center', padding: 'var(--space-xl)' }}>
           <p style={{ color: 'var(--color-text-tertiary)' }}>ยังไม่มีข้อความที่น่าสงสัยในกลุ่มนี้</p>
         </div>

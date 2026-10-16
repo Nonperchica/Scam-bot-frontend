@@ -115,6 +115,8 @@ button:disabled { cursor: wait; opacity: .6; }
 .art-spark-one { color: #e54083; top: 10px; left: 2px; font-size: 27px; }
 .art-spark-two { color: #29b395; bottom: 11px; right: 6px; font-size: 35px; }
 .overview-section-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 5px; margin-bottom: -4px; }
+.overview-filter-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.overview-source-note { margin: 10px 0 0; color: #8b7f92; font-size: 11px; }
 .overview-section-bar h2 { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
 .overview-section-bar p { color: #8b7f92; font-size: 10px; margin-top: 5px; }
 .period-label { background: #ede7f2; padding: 3px 7px; color: #775988; font-size: 9px; font-weight: 500; border-radius: 5px; }

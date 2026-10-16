@@ -5,16 +5,16 @@ import Sidebar from '../components/Sidebar';
 import { logout } from '../services/api';
 
 const pages: Record<string, { title: string; subtitle: string; english: string }> = {
-  '/': { title: 'ภาพรวมระบบ', subtitle: 'มองเห็นความเสี่ยง ดูแลทุกบทสนทนา', english: 'Overview' },
+  '/overview': { title: 'ภาพรวมระบบ', subtitle: 'มองเห็นความเสี่ยง ดูแลทุกบทสนทนา', english: 'Overview' },
   '/line-groups': { title: 'กลุ่ม LINE ที่เชื่อมต่อ', subtitle: 'ดูแลการสนทนาและติดตามความเสี่ยงในแต่ละกลุ่ม', english: 'LINE groups' },
-  '/threat-logs': { title: 'ประวัติความเสี่ยง', subtitle: 'ค้นหาและตรวจสอบข้อความที่ Eh?Bot พบความเสี่ยง', english: 'Threat history' },
+  '/risky-messages': { title: 'ข้อความที่พบความเสี่ยง', subtitle: 'รายการข้อความที่ Eh?Bot ตรวจพบความเสี่ยงจากแชทส่วนตัวและกลุ่ม LINE', english: 'Risky messages' },
   '/dataset': { title: 'ชุดข้อมูล', subtitle: 'จัดการตัวอย่างข้อความสำหรับพัฒนาการตรวจจับ', english: 'Dataset' },
 };
 
 export default function MainLayout() {
   const mobileMenu = useRef<HTMLDialogElement>(null);
   const location = useLocation();
-  const page = pages[location.pathname] || { title: 'รายละเอียดกลุ่ม', subtitle: 'ภาพรวมการตรวจข้อความของกลุ่ม LINE', english: 'Group details' };
+  const page = pages[location.pathname] || { title: 'แดชบอร์ดกลุ่ม LINE', subtitle: 'ภาพรวมการตรวจข้อความของกลุ่ม LINE', english: 'Group dashboard' };
   const today = new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Bangkok' }).format(new Date());
   return (
     <div className="app-frame">

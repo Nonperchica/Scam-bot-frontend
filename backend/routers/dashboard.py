@@ -2,7 +2,7 @@
 import os
 import secrets
 from datetime import date
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from live_data import sources_and_logs, summary, groups, threat_logs, daily_report
 
 
@@ -31,14 +31,25 @@ def history():
 
 
 @router.get("/dashboard")
-def dashboard():
-    _, logs = history()
-    return summary(logs)
+def dashboard(period: str = Query(default="week", pattern="^(day|week|month)$"),
+              source: str = Query(default="all", pattern="^(all|private|group)$"),
+              target: date | None = None):
+    sources, logs = history()
+    if source != "all":
+        source_types = {str(item["id"]): item.get("source_type") for item in sources}
+        wanted = "user" if source == "private" else "group"
+        logs = [row for row in logs if source_types.get(str(row.get("source_id")), row.get("source_type")) == wanted]
+    return summary(logs, period=period, target=target)
 
 
 @router.get("/threats")
-def threats(source_id: str | None = None):
+def threats(source_id: str | None = None,
+            source: str = Query(default="all", pattern="^(all|private|group)$")):
     sources, logs = history()
+    if source != "all":
+        source_types = {str(item["id"]): item.get("source_type") for item in sources}
+        wanted = "user" if source == "private" else "group"
+        logs = [row for row in logs if source_types.get(str(row.get("source_id")), row.get("source_type")) == wanted]
     return threat_logs(sources, logs, source_id)
 
 
@@ -53,6 +64,6 @@ def line_groups():
 
 
 @router.get("/line-groups/{source_id}/trends")
-def group_trends(source_id: str):
+def group_trends(source_id: str, period: str = Query(default="week", pattern="^(day|week|month)$"), target: date | None = None):
     _, logs = history()
-    return summary([r for r in logs if r.get("source_id") == source_id])["trends"]
+    return summary([r for r in logs if r.get("source_id") == source_id], period=period, target=target)

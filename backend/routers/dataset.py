@@ -64,18 +64,20 @@ def approval_history(page: int = Query(1, ge=1), label: Literal["spam", "ham"] |
 
 def candidates():
     _, logs = sources_and_logs()
-    reviewed = {str(row["candidate_id"]) for row in read_all("dataset_reviews")}
+    reviewed = {str(row["candidate_id"]) for row in read_all("dataset_reviews", "candidate_id")}
+    existing_messages = {(row.get("thai_text") or "").strip()
+                         for row in read_all("scam_dataset", "thai_text")}
     pending = []
     for row in sorted(logs, key=lambda item: (item.get("received_at") or "", str(item["id"])), reverse=True):
         status = row.get("detection_status")
         if str(row["id"]) in reviewed or status not in {"risk_found", "uncertain"}:
             continue
         text = (row.get("message_text") or "").strip()
-        if not text:
+        if not text or text in existing_messages:
             continue
         pending.append({"id": str(row["id"]), "message": text, "label": None,
                         "reason": "ระบบไม่แน่ใจ" if status == "uncertain" else "พบความเสี่ยง รอแอดมินตรวจ",
-                        "similarity": row.get("similarity_percent"), "analysis": row.get("reason") or "ยังไม่ระบุ",
+                        "analysis": row.get("reason") or "ยังไม่ระบุ",
                         "source": "LINE", "category": "ยังไม่ระบุ", "occurrences": 1})
     return pending
 
@@ -109,6 +111,39 @@ def embedding(text):
     return values
 
 
+def closest_dataset_message(text):
+    """Return the nearest reviewed example; this score is not a scam probability."""
+    vector = embedding(text)
+    matches = get_supabase_client().rpc("match_scam", {
+        "query_embedding": vector, "match_threshold": 0, "match_count": 1,
+    }).execute().data
+    if not isinstance(matches, list):
+        raise ValueError("Invalid similarity response")
+    if not matches:
+        return None, vector
+    match = matches[0]
+    score = match.get("similarity")
+    if type(score) not in (int, float) or not math.isfinite(score):
+        raise ValueError("Invalid similarity")
+    if not isinstance(match.get("thai_text"), str) or match.get("label") not in {"spam", "ham"}:
+        raise ValueError("Invalid match")
+    return {"message": match["thai_text"], "label": match["label"],
+            "similarity": round(score * 100, 2)}, vector
+
+
+@router.post("/dataset/candidates/{candidate_id}/similarity")
+def preview_similarity(candidate_id: UUID, body: Review):
+    try:
+        if not any(row["id"] == str(candidate_id) for row in candidates()):
+            raise HTTPException(404, "ไม่พบรายการรอพิจารณา")
+        match, _ = closest_dataset_message(body.message)
+        return {"match": match}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(503, "เปรียบเทียบข้อมูลไม่สำเร็จ กรุณาลองใหม่") from None
+
+
 def review(candidate_id, body, action):
     try:
         db = get_supabase_client()
@@ -126,25 +161,15 @@ def review(candidate_id, body, action):
             raise HTTPException(404, "ไม่พบรายการรอพิจารณา")
         if action == "saved" and body.label is None:
             raise HTTPException(422, "ต้องเลือก spam หรือ ham")
-        vector = embedding(body.message) if action == "saved" else None
+        vector = None
         if action == "saved":
-            matches = db.rpc("match_scam", {"query_embedding": vector,
-                "match_threshold": 0, "match_count": 1}).execute().data
-            if not isinstance(matches, list):
-                raise ValueError("Invalid similarity response")
-            if matches:
-                match = matches[0]
-                score = match.get("similarity")
-                if type(score) not in (int, float) or not math.isfinite(score):
-                    raise ValueError("Invalid similarity")
-                if not isinstance(match.get("thai_text"), str) or match.get("label") not in {"spam", "ham"}:
-                    raise ValueError("Invalid match")
+            match, vector = closest_dataset_message(body.message)
+            if match:
                 confirmation = hashlib.sha256(json.dumps([body.message, body.label,
-                    match["thai_text"], match["label"]], ensure_ascii=False).encode()).hexdigest()
+                    match["message"], match["label"]], ensure_ascii=False).encode()).hexdigest()
                 if body.confirmMatch != confirmation:
                     return {"status": "review_required", "confirmation": confirmation,
-                            "match": {"message": match["thai_text"], "label": match["label"],
-                                      "similarity": round(score * 100, 2)}}
+                            "match": match}
         result = db.rpc("review_dataset_candidate", {
             "p_candidate_id": str(candidate_id), "p_action": action,
             "p_message": body.message, "p_label": body.label, "p_embedding": vector,

@@ -1095,6 +1095,18 @@ select {
   box-shadow: 0 0 0 3px var(--color-accent-glow);
 }
 
+.period-selector { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-bg-primary); }
+.period-controls { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.period-target-label { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-secondary); font-size: 0.8rem; }
+.period-target-label input { border: 1px solid var(--color-border); border-radius: 8px; padding: 7px 9px; background: var(--color-bg-primary); color: var(--color-text-primary); font: inherit; }
+.period-target-label input:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.sender-id { display: block; color: var(--color-text-tertiary); font-size: 0.7rem; margin-top: 2px; }
+.period-option { border: 0; border-radius: 8px; padding: 7px 12px; background: transparent; color: var(--color-text-secondary); cursor: pointer; font: inherit; font-size: 0.8rem; }
+.period-option.is-active { background: var(--color-accent); color: white; }
+.period-option:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.group-period-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: var(--space-lg) 0; }
+.group-period-bar > span { color: var(--color-text-secondary); font-size: 0.85rem; }
+
 .result-count {
   font-size: 0.82rem;
   color: var(--color-text-tertiary);

@@ -6,8 +6,9 @@ import DataError from '../components/DataError';
 import { useEffect, useState } from 'react';
 import { Search, Filter } from 'lucide-react';
 import ThreatTable from '../components/ThreatTable';
+import SourceSelector from '../components/SourceSelector';
 import { fetchThreatLogs } from '../services/api';
-import type { ThreatLog, RiskLevel } from '../types';
+import type { ThreatLog, RiskLevel, DashboardSource } from '../types';
 
 export default function ThreatLogs() {
   const [logs, setLogs] = useState<ThreatLog[]>([]);
@@ -15,20 +16,23 @@ export default function ThreatLogs() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRisk, setFilterRisk] = useState<RiskLevel | 'all'>('all');
+  const [source, setSource] = useState<DashboardSource>('all');
 
   useEffect(() => {
+    let active = true;
     async function loadData() {
       try {
-        const data = await fetchThreatLogs();
-        setLogs(data);
+        const data = await fetchThreatLogs(source);
+        if (active) { setLogs(data); setError(''); }
       } catch {
-        setError('โหลดข้อมูลจริงไม่สำเร็จ กรุณาตรวจการเชื่อมต่อหรือรหัสเข้า Dashboard');
+        if (active) setError('โหลดข้อมูลจริงไม่สำเร็จ กรุณาตรวจการเชื่อมต่อหรือรหัสเข้า Dashboard');
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
     loadData();
-  }, []);
+    return () => { active = false; };
+  }, [source]);
 
   // กรองข้อมูล
   const filteredLogs = logs.filter((log) => {
@@ -36,6 +40,7 @@ export default function ThreatLogs() {
       searchQuery === '' ||
       log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.senderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.id.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchRisk = filterRisk === 'all' || log.riskLevel === filterRisk;
@@ -58,12 +63,13 @@ export default function ThreatLogs() {
     <div className="threat-logs-page">
       {/* Toolbar */}
       <div className="toolbar">
+        <SourceSelector value={source} onChange={value => { setSource(value); setLoading(true); setLogs([]); }} />
         {/* Search */}
         <div className="search-box">
           <Search size={18} className="search-icon" />
           <input
             type="text"
-            aria-label="ค้นหาประวัติความเสี่ยง"
+            aria-label="ค้นหาข้อความที่พบความเสี่ยง"
             placeholder="ค้นหาข้อความ, ผู้ส่ง, ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
