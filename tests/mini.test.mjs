@@ -1,0 +1,161 @@
+// ใช้ Vite แปลง TypeScript จริง; จำลองเฉพาะเครือข่ายและ LIFF ไม่ใช้ token จริง
+import assert from 'node:assert/strict';
+import { after, afterEach, before, mock, test } from 'node:test';
+import { createServer } from 'vite';
+import react from '@vitejs/plugin-react';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
+
+let server;
+let api;
+let MiniCaseDetail;
+let App;
+const caseId = 'a'.repeat(32);
+const detail = {
+  id: caseId, title: 'เคสทดสอบ', category: 'message', message: 'ส่ง OTP มา',
+  receivedAt: '2026-10-16T08:00:00Z', status: 'risk_found', reason: 'เหตุผลจากผลเดิม',
+  lessonId: 'otp', warningPoints: [{ icon: 'user', title: 'พบคำว่า OTP', description: 'คำที่พบไม่ใช่หลักฐานยืนยัน' }],
+  nextSteps: ['อย่าส่งรหัส', 'ตรวจผ่านช่องทางทางการ'],
+};
+
+before(async () => {
+  server = await createServer({ configFile: false, envDir: false, plugins: [react()],
+    server: { middlewareMode: true }, appType: 'custom',
+    define: { 'import.meta.env.VITE_MINI_LIFF_ID': JSON.stringify('1234567890-TestApp') },
+  });
+  api = await server.ssrLoadModule('/src/mini/services/miniApi.ts');
+  MiniCaseDetail = (await server.ssrLoadModule('/src/mini/components/MiniCaseDetail.tsx')).default;
+  App = (await server.ssrLoadModule('/src/App.tsx')).default;
+});
+afterEach(() => mock.restoreAll());
+after(async () => { await server?.close(); });
+
+test('ส่ง token ใน header เท่านั้นและรับผลของรหัสที่ขอ', async () => {
+  const fetch = mock.method(globalThis, 'fetch', async () => Response.json(detail));
+  assert.deepEqual(await api.fetchMiniCase(caseId, 'offline-id-token', new AbortController().signal), detail);
+  const [url, options] = fetch.mock.calls[0].arguments;
+  assert.equal(url, `/api/mini/cases/${caseId}`);
+  assert.equal(options.headers.Authorization, 'Bearer offline-id-token');
+  assert.equal(options.cache, 'no-store');
+  assert.equal(options.credentials, 'omit');
+  assert.equal(options.redirect, 'error');
+  assert.equal(options.referrerPolicy, 'no-referrer');
+});
+
+test('เคสเปิดไม่ได้ไม่คืนตัวอย่างหรือข้อความดิบจาก server', async () => {
+  for (const code of [401, 404, 503]) {
+    mock.method(globalThis, 'fetch', async () => new Response('INTERNAL_SECRET', { status: code }));
+    await assert.rejects(api.fetchMiniCase(caseId, 'offline', new AbortController().signal), error => {
+      assert.doesNotMatch(error.message, /INTERNAL_SECRET/);
+      assert.match(error.message, code === 404 ? /หมดอายุ/ : code === 401 ? /เข้าสู่ระบบ/ : /ลองใหม่/);
+      return true;
+    });
+    mock.restoreAll();
+  }
+});
+
+test('ผลของเคสอื่นและโครงสร้างที่ไม่ถูกต้องแสดงไม่ได้', async () => {
+  for (const invalid of [{ ...detail, id: 'b'.repeat(32) }, { ...detail, status: 'safe' },
+    { ...detail, warningPoints: [{ icon: 'unknown', title: 'bad', description: '' }] },
+    { ...detail, receivedAt: 'invalid' }, { ...detail, nextSteps: [] }]) {
+    mock.method(globalThis, 'fetch', async () => Response.json(invalid));
+    await assert.rejects(api.fetchMiniCase(caseId, 'offline', new AbortController().signal), /ข้อมูลผลตรวจไม่สมบูรณ์/);
+    mock.restoreAll();
+  }
+});
+
+test('JSON เสียและเครือข่ายล้มเหลวใช้ข้อความที่ผู้ใช้เข้าใจ', async () => {
+  mock.method(globalThis, 'fetch', async () => new Response('NOT_JSON_SECRET'));
+  await assert.rejects(api.fetchMiniCase(caseId, 'offline', new AbortController().signal), /ข้อมูลผลตรวจไม่สมบูรณ์/);
+  mock.restoreAll();
+  mock.method(globalThis, 'fetch', async () => { throw new Error('INTERNAL_SECRET'); });
+  await assert.rejects(api.fetchMiniCase(caseId, 'offline', new AbortController().signal), /ติดต่อระบบข้อมูลไม่ได้/);
+});
+
+test('ยกเลิกคำขอได้เมื่อเปลี่ยนหน้า', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  const aborted = new DOMException('Aborted', 'AbortError');
+  mock.method(globalThis, 'fetch', async () => { throw aborted; });
+  await assert.rejects(api.fetchMiniCase(caseId, 'offline', controller.signal), error => error === aborted);
+});
+
+test('หน้าเคสจริงแสดงเหตุผลเดิมและแยกคำแนะนำ ไม่ลิงก์ไปเคสตัวอย่าง', () => {
+  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
+    React.createElement(MiniCaseDetail, { detectionCase: detail, live: true })));
+  assert.match(markup, /เหตุผลจากผลตรวจเดิม/);
+  assert.match(markup, /หัวข้อที่ควรตรวจเพิ่ม/);
+  assert.match(markup, /ไม่ใช่หลักฐานยืนยันการหลอกลวง/);
+  assert.doesNotMatch(markup, /demo-electricity|\/mini\/chat|\/mini\/lessons/);
+});
+
+test('ข้อความที่ตรวจแสดงเป็นตัวอักษร ไม่ทำงานเป็น HTML', () => {
+  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
+    React.createElement(MiniCaseDetail, { detectionCase: { ...detail, message: '<script>alert(1)</script>' }, live: true })));
+  assert.match(markup, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.doesNotMatch(markup, /<script>alert/);
+});
+
+function renderPage(path) {
+  return renderToStaticMarkup(React.createElement(MemoryRouter, { initialEntries: [path] }, React.createElement(App)));
+}
+
+test('หน้าแรกจริงยังใช้ดีไซน์มาสคอตทักทายและครุ่นคิด แม้กำลังเชื่อม LINE', () => {
+  const markup = renderPage('/mini/result');
+  assert.match(markup, /mini-brand-banner/);
+  assert.match(markup, /wave\.png/);
+  assert.match(markup, /think\.png/);
+  assert.match(markup, /mini-invite/);
+  assert.match(markup, /ประวัติการตรวจ/);
+  assert.match(markup, /mini-navigation/);
+  assert.match(markup, /href="\/mini\/result\/history"/);
+  assert.doesNotMatch(markup, /demo-electricity|บัญชีตัวอย่าง/);
+});
+
+test('หน้าจริงทุกหน้าคงเมนูและมาสคอตตามแบบล่าสุด พร้อมพารหัสเคสไปต่อ', () => {
+  for (const [path, pose] of [['/mini/result/history', 'wave'], ['/mini/result/lessons', 'book'],
+    ['/mini/result/help', 'guide'], ['/mini/result/settings', 'heart'], ['/mini/result', 'inspect']]) {
+    const markup = renderPage(`${path}?case=${caseId}`);
+    assert.match(markup, new RegExp(`${pose}\\.png`));
+    assert.match(markup, /mini-navigation/);
+    assert.match(markup, new RegExp(`/mini/result/history\\?case=${caseId}`));
+    assert.doesNotMatch(markup, /href="\/mini\/chat"|href="\/mini\/settings"|href="\/mini\/help"|บัญชีตัวอย่าง/);
+  }
+});
+
+test('เริ่ม LIFF ครั้งเดียวเมื่อมีการเรียกพร้อมกัน และใช้ ID ที่ตั้งค่า', async () => {
+  const init = mock.fn(async () => {});
+  const oldWindow = globalThis.window;
+  globalThis.window = { liff: { init } };
+  try {
+    const { initializeMiniLiff } = await server.ssrLoadModule('/src/mini/services/miniLiff.ts');
+    const [first, second] = await Promise.all([initializeMiniLiff(), initializeMiniLiff()]);
+    assert.equal(first, second);
+    assert.equal(init.mock.calls.length, 1);
+    assert.deepEqual(init.mock.calls[0].arguments, [{ liffId: '1234567890-TestApp' }]);
+  } finally {
+    globalThis.window = oldWindow;
+  }
+});
+
+test('Login จาก localhost เปิด LIFF HTTPS แทนการส่ง localhost กลับให้ LINE', async () => {
+  const { miniLoginTarget } = await server.ssrLoadModule('/src/mini/services/miniLiff.ts');
+  for (const origin of ['http://127.0.0.1:5174', 'http://localhost:5174', 'https://localhost:5174']) {
+    const target = miniLoginTarget(`${origin}/mini/result/history?token=DO_NOT_FORWARD#private`, '1234567890-TestApp', caseId);
+    assert.equal(target.launchLiff, true);
+    assert.equal(target.url, `https://liff.line.me/1234567890-TestApp?case=${caseId}`);
+    assert.doesNotMatch(target.url, /localhost|127\.0\.0\.1|DO_NOT_FORWARD|private/);
+  }
+});
+
+test('Login บน HTTPS เก็บเฉพาะรหัสเคส และปฏิเสธ ID ที่แทรก query', async () => {
+  const { miniLoginTarget } = await server.ssrLoadModule('/src/mini/services/miniLiff.ts');
+  assert.deepEqual(miniLoginTarget('https://mini.example/mini/result/history?token=SECRET#private', '1234567890-TestApp', caseId), {
+    launchLiff: false, url: `https://mini.example/mini/result/history?case=${caseId}`,
+  });
+  assert.equal(miniLoginTarget('http://localhost:5174/mini/result', '1234567890-TestApp', '').url,
+    'https://liff.line.me/1234567890-TestApp');
+  assert.throws(() => miniLoginTarget('http://localhost:5174', '123-abc?redirect=evil', caseId));
+  assert.throws(() => miniLoginTarget('http://localhost:5174', '1234567890-TestApp', 'bad&token=secret'));
+});

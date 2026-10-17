@@ -159,6 +159,14 @@
   .mini-primary-button:hover { box-shadow: 0 7px 17px #38203629; }
 }
 @media (prefers-reduced-motion: reduce) { .mini-case-row, .mini-primary-button { transition: none; } }
+.mini-live-footer { padding-top: 0; }
+.mini-root .mini-card blockquote { white-space: pre-wrap; overflow-wrap: anywhere; }
+.mini-root .mini-card p { overflow-wrap: anywhere; }
+.mini-session-heading { display: flex; align-items: center; gap: 13px; }
+.mini-session-heading .mini-mascot { width: 78px; height: 78px; padding: 5px; border-radius: 50%; background: #fffdf3; }
+.mini-session-heading h2 { font-size: 19px; }
+.mini-primary-button:disabled { opacity: .65; cursor: default; }
+
 @media (max-width: 520px) {
   .mini-root { padding: 0; background: #fff9fc; }
   .mini-shell { min-height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }

@@ -1,4 +1,6 @@
 import { EyeOff, FileSearch, MessageCircle, ShieldAlert } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import type { MiniLayoutContext } from '../sampleCases';
 import MiniPageHeading from '../components/MiniPageHeading';
 import MiniChatButton from '../components/MiniChatButton';
 
@@ -17,6 +19,13 @@ const questions = [
 ];
 
 export default function MiniHelp() {
+  const { live } = useOutletContext<MiniLayoutContext>();
+  const visibleQuestions = questions.map(item => {
+    if (!live) return item;
+    if (item.question === 'ทำไมเปิดผลเก่าไม่ได้?') return { ...item, answer: 'เคสชั่วคราวมีอายุ 15 นาที และหายเมื่อบอตรีสตาร์ต ต้องใช้บัญชี LINE เดียวกับที่ส่งตรวจ หากเปิดไม่ได้ให้ส่งข้อความมาตรวจใหม่ในแชตเดิม' };
+    if (item.question === 'ส่งรูปภาพหรือเสียงได้ไหม?') return { ...item, answer: 'หน้านี้แสดงรายละเอียดจากผลตรวจเดิม ความสามารถตรวจแต่ละชนิดให้ดูข้อความตอบของบอตในแชต หากบอตไม่รองรับ ให้คัดลอกข้อความส่งมาตรวจแทน' };
+    return item;
+  });
   return (
     <>
       <MiniPageHeading title="ใช้ Eh?Bot ยังไง?" pose="guide" />
@@ -43,7 +52,7 @@ export default function MiniHelp() {
         <MiniChatButton label="เริ่มคุยกับ Eh?Bot" />
         <section className="mini-card mini-faq">
           <h2>คำถามที่พบบ่อย</h2>
-          {questions.map((item) => (
+          {visibleQuestions.map((item) => (
             <details key={item.question}><summary>{item.question}</summary><p>{item.answer}</p></details>
           ))}
         </section>

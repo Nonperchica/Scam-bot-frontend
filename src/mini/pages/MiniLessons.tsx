@@ -1,15 +1,17 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import { BadgeCheck, ChevronRight, Clock3, FileSearch, Gift, KeyRound, Lightbulb, Link2, Wallet } from 'lucide-react';
 import MiniMascot from '../components/MiniMascot';
 import { lessonTopics } from '../lessonTopics';
 import { sampleCases } from '../sampleCases';
+import type { MiniLayoutContext } from '../sampleCases';
 
 const lessonIcons = { links: Link2, otp: KeyRound, prizes: Gift, urgency: Clock3, payments: Wallet, impersonation: BadgeCheck };
 
 export default function MiniLessons() {
+  const session = useOutletContext<MiniLayoutContext>();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedLesson = lessonTopics.find((lesson) => lesson.id === searchParams.get('topic')) ?? lessonTopics[0];
-  const sourceCase = sampleCases.find((item) => item.id === searchParams.get('case'));
+  const sourceCase = session.live ? undefined : sampleCases.find((item) => item.id === searchParams.get('case'));
   function selectTopic(topicId: string) {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('topic', topicId);
@@ -34,7 +36,7 @@ export default function MiniLessons() {
         <section className="mini-example-scene" aria-live="polite"><p className="mini-secondary">ตัวอย่างข้อความสมมติ</p><blockquote>{selectedLesson.exampleBefore}<mark>{selectedLesson.highlightedText}</mark>{selectedLesson.exampleAfter}</blockquote><h2><Lightbulb aria-hidden="true" />{selectedLesson.advice}</h2></section>
         <p className="mini-lesson-explanation">{selectedLesson.explanation}</p>
         <p className="mini-note">ตัวอย่างใช้เป็นจุดสังเกต ต้องดูบริบทประกอบ การพบคำเดียวไม่ยืนยันการหลอกลวง</p>
-        {sourceCase ? <Link to={`/mini/cases/${sourceCase.id}`} className="mini-learning-link"><FileSearch aria-hidden="true" /><span>กลับไปดูผลตรวจเดิม</span><ChevronRight aria-hidden="true" /></Link> : <Link to="/mini/help" className="mini-learning-link"><FileSearch aria-hidden="true" /><span>ดูวิธีใช้ Eh?Bot</span><ChevronRight aria-hidden="true" /></Link>}
+        {session.live && session.detail ? <Link to={session.miniHref('detail')} className="mini-learning-link"><FileSearch aria-hidden="true" /><span>กลับไปดูผลตรวจเดิม</span><ChevronRight aria-hidden="true" /></Link> : sourceCase ? <Link to={`/mini/cases/${sourceCase.id}`} className="mini-learning-link"><FileSearch aria-hidden="true" /><span>กลับไปดูผลตรวจเดิม</span><ChevronRight aria-hidden="true" /></Link> : <Link to={session.miniHref('help')} className="mini-learning-link"><FileSearch aria-hidden="true" /><span>ดูวิธีใช้ Eh?Bot</span><ChevronRight aria-hidden="true" /></Link>}
       </div>
     </>
   );

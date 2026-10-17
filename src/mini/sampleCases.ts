@@ -1,4 +1,5 @@
 import type { LessonId } from './lessonTopics';
+import type { MiniSession } from './services/useMiniSession';
 
 export type DetectionStatus = 'risk_found' | 'uncertain' | 'no_risk_found';
 export type WarningIcon = 'clock' | 'user' | 'link' | 'gift' | 'message' | 'calendar' | 'help';
@@ -19,7 +20,7 @@ export interface DetectionCase {
   nextSteps: string[];
 }
 
-export interface MiniLayoutContext {
+export interface MiniLayoutContext extends MiniSession {
   largeText: boolean;
   setLargeText: (value: boolean) => void;
 }
