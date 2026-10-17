@@ -5,11 +5,12 @@ import { createServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 
 let server;
 let api;
 let MiniCaseDetail;
+let MiniSessionNotice;
 let App;
 const caseId = 'a'.repeat(32);
 const detail = {
@@ -26,6 +27,7 @@ before(async () => {
   });
   api = await server.ssrLoadModule('/src/mini/services/miniApi.ts');
   MiniCaseDetail = (await server.ssrLoadModule('/src/mini/components/MiniCaseDetail.tsx')).default;
+  MiniSessionNotice = (await server.ssrLoadModule('/src/mini/components/MiniSessionNotice.tsx')).default;
   App = (await server.ssrLoadModule('/src/App.tsx')).default;
 });
 afterEach(() => mock.restoreAll());
@@ -53,6 +55,18 @@ test('เคสเปิดไม่ได้ไม่คืนตัวอย�
     });
     mock.restoreAll();
   }
+});
+
+test('ข้อความเคสหมดอายุแสดงทันทีโดยไม่ต้องกดดูรายละเอียด', () => {
+  const error = 'เคสอาจหมดอายุ บอตรีสตาร์ต หรือไม่ใช่เคสของคุณ กรุณาส่งข้อความมาตรวจใหม่ในแชตเดิม';
+  const session = { loading: false, error, needsLogin: false, retry: () => {} };
+  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
+    React.createElement(Routes, null,
+      React.createElement(Route, { element: React.createElement(Outlet, { context: session }) },
+        React.createElement(Route, { index: true, element: React.createElement(MiniSessionNotice) })))));
+  assert.match(markup, /role="alert"[^>]*>เคสอาจหมดอายุ/);
+  assert.match(markup, /กรุณาส่งข้อความมาตรวจใหม่ในแชตเดิม/);
+  assert.doesNotMatch(markup, /<details|ดูรายละเอียด/);
 });
 
 test('ผลของเคสอื่นและโครงสร้างที่ไม่ถูกต้องแสดงไม่ได้', async () => {

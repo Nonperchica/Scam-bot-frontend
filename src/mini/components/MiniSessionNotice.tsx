@@ -12,7 +12,7 @@ export default function MiniSessionNotice() {
         <p className="mini-secondary">{session.loading ? 'รอสักครู่ ให้เราช่วยเปิดเคสของคุณ' : session.needsLogin ? 'ใช้บัญชีเดียวกับที่ส่งข้อความตรวจ' : 'ลองอีกครั้ง หรือเปิดจากปุ่มในแชตเดิม'}</p>
       </div>
     </div>
-    {session.error && <details><summary>ดูรายละเอียด</summary><p role="alert">{session.error}</p></details>}
+    {session.error && <p className="mini-session-error" role="alert">{session.error}</p>}
     {session.loading && <p className="mini-note" role="status">กำลังยืนยันเจ้าของเคส โดยไม่ตรวจ AI ซ้ำ</p>}
     {session.needsLogin && <button type="button" className="mini-primary-button" onClick={session.login}>เข้าสู่ระบบ LINE</button>}
     {session.error && <button type="button" className="mini-secondary-button" onClick={session.retry}><RefreshCw aria-hidden="true" />ลองอีกครั้ง</button>}
