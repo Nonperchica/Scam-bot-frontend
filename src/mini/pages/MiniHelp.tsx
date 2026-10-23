@@ -1,6 +1,4 @@
 import { EyeOff, FileSearch, MessageCircle, ShieldAlert } from 'lucide-react';
-import { useOutletContext } from 'react-router-dom';
-import type { MiniLayoutContext } from '../sampleCases';
 import MiniPageHeading from '../components/MiniPageHeading';
 import MiniChatButton from '../components/MiniChatButton';
 
@@ -10,22 +8,17 @@ const helpSteps = [
   { icon: FileSearch, title: 'เปิดรายละเอียด', description: 'ดูจุดควรระวังและเรียนรู้ต่อ' },
 ];
 const questions = [
-  { question: 'ส่งรูปภาพหรือเสียงได้ไหม?', answer: 'หน้าตัวอย่างนี้เน้นข้อความก่อน การรองรับภาพและเสียงต้องตรวจและเชื่อมระบบจริงเพิ่มเติม' },
+  { question: 'ส่งรูปภาพหรือเสียงได้ไหม?', answer: 'ส่งรูปภาพ เช่น ภาพแคปหน้าจอแชต ได้ บอตจะอ่านข้อความในรูปมาตรวจ ส่วนข้อความเสียงยังไม่รองรับ ให้พิมพ์หรือคัดลอกข้อความส่งมาแทน' },
   { question: 'ควรปิดบังข้อมูลอะไร?', answer: 'เช่น เลขบัญชี เลขบัตรประชาชน รหัสผ่าน OTP และข้อมูลส่วนตัวที่ไม่จำเป็นต่อการตรวจ' },
   { question: 'ส่งแค่ลิงก์เพียงพอหรือไม่?', answer: 'อาจมีบริบทไม่พอ ควรส่งข้อความที่มาพร้อมลิงก์ด้วย บอตยังไม่ได้เปิดตรวจเว็บไซต์ปลายทาง' },
   { question: '“ควรตรวจสอบเพิ่มเติม” หมายถึงอะไร?', answer: 'ข้อมูลหรือบริบทยังไม่พอสำหรับประเมิน ไม่ใช่ผลยืนยันว่าเป็นมิจฉาชีพ' },
   { question: 'ผลไม่ตรงกับบริบท ควรทำอย่างไร?', answer: 'ส่งข้อความพร้อมบริบทเพิ่มเติมในแชต โดยปิดบังข้อมูลส่วนตัว การส่งใหม่จะเป็นการตรวจอีกเคสหนึ่ง' },
-  { question: 'ทำไมเปิดผลเก่าไม่ได้?', answer: 'ในหน้าตัวอย่างนี้อาจใช้รหัสเคสที่ไม่มีอยู่ ส่วนการอ่านประวัติจริงและการตรวจสิทธิ์จะเพิ่มในช่วงเชื่อมระบบ' },
+  { question: 'ทำไมเปิดผลเก่าไม่ได้?', answer: 'ต้องใช้บัญชี LINE เดียวกับที่ส่งตรวจ หรือเคสอาจถูกลบไปแล้วจากหน้าบัญชี หากเปิดไม่ได้ให้ส่งข้อความมาตรวจใหม่ในแชตเดิม' },
 ];
 
 export default function MiniHelp() {
-  const { live } = useOutletContext<MiniLayoutContext>();
-  const visibleQuestions = questions.map(item => {
-    if (!live) return item;
-    if (item.question === 'ทำไมเปิดผลเก่าไม่ได้?') return { ...item, answer: 'เคสชั่วคราวมีอายุ 15 นาที และหายเมื่อบอตรีสตาร์ต ต้องใช้บัญชี LINE เดียวกับที่ส่งตรวจ หากเปิดไม่ได้ให้ส่งข้อความมาตรวจใหม่ในแชตเดิม' };
-    if (item.question === 'ส่งรูปภาพหรือเสียงได้ไหม?') return { ...item, answer: 'หน้านี้แสดงรายละเอียดจากผลตรวจเดิม ความสามารถตรวจแต่ละชนิดให้ดูข้อความตอบของบอตในแชต หากบอตไม่รองรับ ให้คัดลอกข้อความส่งมาตรวจแทน' };
-    return item;
-  });
+  // คำตอบใช้ชุดเดียวกันทั้งหน้าตัวอย่างและหน้าจริง จึงไม่ต้องแยกตาม live
+  const visibleQuestions = questions;
   return (
     <>
       <MiniPageHeading title="ใช้ Eh?Bot ยังไง?" pose="guide" />

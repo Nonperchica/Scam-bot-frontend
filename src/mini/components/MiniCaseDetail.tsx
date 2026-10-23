@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { BadgeHelp, BookOpen, CalendarDays, ChevronRight, CircleHelp, Clock3, Gift, Info, Lightbulb, Link2, MessageCircle, ShieldAlert, UserRound } from 'lucide-react';
+import { BadgeHelp, BookOpen, CalendarDays, ChevronRight, CircleHelp, Clock3, Gift, Info, Lightbulb, Link2, MessageCircle, ShieldAlert, ShieldCheck, UserRound } from 'lucide-react';
 import { formatCaseTime, statusAdvice, statusLabels } from '../sampleCases';
 import type { DetectionStatus } from '../sampleCases';
 import type { MiniCaseData } from '../services/miniApi';
@@ -11,7 +11,8 @@ const statusMascots: Record<DetectionStatus, MascotPose> = { risk_found: 'alert'
 const warningIcons = { clock: Clock3, user: UserRound, link: Link2, gift: Gift, message: MessageCircle, calendar: CalendarDays, help: BadgeHelp };
 
 export default function MiniCaseDetail({ detectionCase, live = false, learningHref }: { detectionCase: MiniCaseData; live?: boolean; learningHref?: string }) {
-  const StatusIcon = { risk_found: ShieldAlert, uncertain: CircleHelp, no_risk_found: MessageCircle }[detectionCase.status];
+  const StatusIcon = { risk_found: ShieldAlert, uncertain: CircleHelp, no_risk_found: ShieldCheck }[detectionCase.status];
+  const isRisk = detectionCase.status === 'risk_found';
   return (
     <>
       <MiniPageHeading title="รายละเอียดผลตรวจ" pose={statusMascots[detectionCase.status]} />
@@ -33,7 +34,12 @@ export default function MiniCaseDetail({ detectionCase, live = false, learningHr
           })}
           {!live && <details><summary>อ่านเหตุผลเพิ่มเติม</summary><p>{detectionCase.reason}</p></details>}
         </section>
-        <section className="mini-card mini-mint"><div className="mini-advice-row"><span className="mini-advice-icon"><Lightbulb aria-hidden="true" /></span><div><h2>แนะนำให้ทำ</h2><p>{detectionCase.nextSteps[0]}</p></div></div><details><summary>ดูคำแนะนำเพิ่มเติม</summary><ol className="mini-steps">{detectionCase.nextSteps.slice(1).map((step) => <li key={step}>{step}</li>)}</ol></details></section>
+        <section className="mini-card mini-mint"><div className="mini-advice-row"><span className="mini-advice-icon"><Lightbulb aria-hidden="true" /></span><div><h2>แนะนำให้ทำ</h2>{!isRisk && <p>{detectionCase.nextSteps[0]}</p>}</div></div>
+          {/* ผลเสี่ยง: คำแนะนำสำคัญที่สุด จึงแสดงครบทุกข้อทันที ผลอื่นพับข้อที่เหลือไว้ */}
+          {isRisk
+            ? <ol className="mini-steps">{detectionCase.nextSteps.map((step) => <li key={step}>{step}</li>)}</ol>
+            : <details><summary>ดูคำแนะนำเพิ่มเติม</summary><ol className="mini-steps">{detectionCase.nextSteps.slice(1).map((step) => <li key={step}>{step}</li>)}</ol></details>}
+        </section>
         {(!live || learningHref) && <Link to={learningHref || `/mini/lessons?topic=${detectionCase.lessonId}&case=${detectionCase.id}`} className="mini-learning-link"><BookOpen aria-hidden="true" /><span>เรียนรู้จากเคสนี้</span><ChevronRight aria-hidden="true" /></Link>}
         <p className="mini-note"><Info aria-hidden="true" /><span>คำแนะนำจากผลเดิม ไม่ใช่การตรวจซ้ำ<br />ไม่ยืนยันตัวตนผู้ส่งหรือความปลอดภัยของลิงก์</span></p>
         {!live && <MiniChatButton label="กลับไปแชต LINE" />}

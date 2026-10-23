@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { fetchMiniCase } from './miniApi';
-import type { MiniCaseData } from './miniApi';
+import { deleteMiniHistory, fetchMiniCase, fetchMiniHistory } from './miniApi';
+import type { MiniCaseData, MiniHistoryItem } from './miniApi';
 import { initializeMiniLiff, miniLoginTarget } from './miniLiff';
 import type { MiniLiff } from './miniLiff';
 
@@ -60,6 +60,48 @@ export function useMiniSession(live: boolean, caseId: string) {
     return () => { active = false; controller.abort(); window.clearTimeout(timeout); };
   }, [live, caseId, revision]);
 
+  // ประวัติแยก state จากเคสที่เปิด เพื่อเปลี่ยนเคสแล้วรายการไม่หายไปด้วย
+  const [history, setHistory] = useState<{ items: MiniHistoryItem[]; loading: boolean; error: string }>(
+    { items: [], loading: live, error: '' });
+  const [historyRevision, setHistoryRevision] = useState(0);
+  const signedInLiff = view.liff?.isLoggedIn() ? view.liff : undefined;
+
+  useEffect(() => {
+    if (!live || !signedInLiff) return;
+    const controller = new AbortController();
+    async function loadHistory() {
+      try {
+        const token = signedInLiff?.getIDToken();
+        if (!token) throw new Error('ยังไม่ได้รับสิทธิ์เข้าสู่ระบบ กรุณาเปิดจาก LINE ใหม่');
+        const items = await fetchMiniHistory(token, controller.signal);
+        // ถูกยกเลิกระหว่างรอ (เช่น ผู้ใช้กดลบ) ห้ามเอารายการเก่ามาทับ
+        if (controller.signal.aborted) return;
+        setHistory({ items, loading: false, error: '' });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setHistory({ items: [], loading: false, error: error instanceof Error ? error.message : 'โหลดประวัติไม่ได้ กรุณาลองใหม่' });
+      }
+    }
+    void loadHistory();
+    return () => controller.abort();
+  }, [live, signedInLiff, historyRevision]);
+
+  function reloadHistory() {
+    setHistory(current => ({ ...current, loading: true, error: '' }));
+    setHistoryRevision(value => value + 1);
+  }
+
+  // ลบจริงที่ฐานข้อมูล แล้วล้างรายการในหน้าทันที; error ส่งต่อให้หน้าบัญชีแสดง
+  async function deleteHistory(): Promise<number> {
+    const token = signedInLiff?.getIDToken();
+    if (!token) throw new Error('ยังไม่ได้รับสิทธิ์เข้าสู่ระบบ กรุณาเปิดจาก LINE ใหม่');
+    const deleted = await deleteMiniHistory(token);
+    setHistory({ items: [], loading: false, error: '' });
+    // เปลี่ยน revision เพื่อยกเลิกคำขอประวัติที่ค้างอยู่ แล้วโหลดใหม่ (ซึ่งจะว่าง)
+    setHistoryRevision(value => value + 1);
+    return deleted;
+  }
+
   function retry() {
     setState({ caseId, loading: true });
     setRevision(value => value + 1);
@@ -79,16 +121,19 @@ export function useMiniSession(live: boolean, caseId: string) {
   const canReturnToLine = Boolean(view.liff?.isInClient());
   function returnToLine() { if (canReturnToLine) view.liff?.closeWindow(); }
 
-  function miniHref(page: 'history' | 'detail' | 'lessons' | 'settings' | 'help') {
+  // targetId: เปิดเคสที่เลือกจากรายการ; ไม่ส่ง = ใช้เคสที่กำลังเปิดอยู่
+  function miniHref(page: 'history' | 'detail' | 'lessons' | 'settings' | 'help', targetId?: string) {
     if (!live) return { history: '/mini', detail: '/mini', lessons: '/mini/lessons', settings: '/mini/settings', help: '/mini/help' }[page];
     const path = page === 'detail' ? '/mini/result' : `/mini/result/${page}`;
-    const openedId = view.detail?.id || caseId;
+    const openedId = targetId || view.detail?.id || caseId;
     return openedId ? `${path}?case=${encodeURIComponent(openedId)}` : path;
   }
 
   return { live, caseId, loading: live && view.loading, detail: live ? view.detail : undefined,
     error: live ? view.error : undefined, needsLogin: live && view.login,
-    signedIn: Boolean(view.liff?.isLoggedIn()), retry, login, canReturnToLine, returnToLine, miniHref };
+    signedIn: Boolean(view.liff?.isLoggedIn()), retry, login, canReturnToLine, returnToLine, miniHref,
+    history: live ? history.items : [], historyLoading: live && history.loading,
+    historyError: live ? history.error : '', reloadHistory, deleteHistory };
 }
 
 export type MiniSession = ReturnType<typeof useMiniSession>;
