@@ -12,7 +12,10 @@
 |---|---|---|
 | `services/miniLiff.ts` / `initializeMiniLiff()` | อ่าน `VITE_MINI_LIFF_ID` → โหลด LIFF SDK 2.31.1 จาก LINE CDN และ init → คืน SDK ที่เริ่มแล้ว | แสดงข้อความตั้งค่า/เครือข่าย; การเรียกพร้อมกันใช้ Promise เดียว |
 | `services/miniLiff.ts` / `miniLoginTarget(currentUrl, liffId, caseId)` | เลือก URL เข้าสู่ระบบ: localhost/HTTP → เปิด LIFF HTTPS ก่อน; HTTPS จริง → ใช้หน้าเดิมพร้อม case | ตรวจ ID ไม่ให้แทรก query; ตัด query อื่นและ hash ไม่ส่ง token ต่อในลิงก์ |
-| `services/miniApi.ts` / `fetchMiniCase()` | caseId + ID token + AbortSignal → GET Bot API พร้อม Authorization header → ตรวจโครงสร้างและ ID → คืน `MiniCaseData` | 401 ให้เปิด LINE ใหม่, 404 แจ้งหมดอายุ/เปิดไม่ได้, JSON เสียไม่แสดงผล |
+| `services/miniApi.ts` / `fetchMiniCase()` | caseId + ID token + AbortSignal → GET `/api/mini/cases/{id}` พร้อม Authorization header → ตรวจโครงสร้างด้วย `isMiniCaseData()` และ ID → คืน `MiniCaseData` | ได้ 404 จะลองใหม่ 2 ครั้ง (รอ 1 และ 2 วินาที) เพราะบอตอาจยังบันทึกเคสไม่เสร็จ; ยัง 404 แจ้ง “เคสอาจถูกลบ หรือไม่ใช่เคสของบัญชีนี้”; 401 ให้เปิด LINE ใหม่; JSON เสียไม่แสดงผล |
+| `services/miniApi.ts` / `fetchMiniHistory()` | ID token + AbortSignal → GET `/api/mini/history` → กรองทีละรายการด้วย `isMiniHistoryItem()` → คืน `MiniHistoryItem[]` | รายการที่ผิดรูปแบบถูกตัดทิ้งเฉพาะรายการนั้น ทั้งหน้าไม่พัง; 401 ให้เปิด LINE ใหม่ |
+| `services/miniApi.ts` / `deleteMiniHistory()` | ID token → DELETE `/api/mini/history` → คืนจำนวนที่ลบ (`deleted`) | 401 ให้เปิด LINE ใหม่; อื่น ๆ แจ้งลบไม่สำเร็จ |
+| `services/useMiniSession.ts` / `deleteHistory()`, `reloadHistory()` | เรียก `deleteMiniHistory()` แล้วล้างรายการในหน้าและยกเลิกคำขอประวัติที่ค้าง | error ส่งต่อให้ `MiniSettings` แสดง |
 | `services/useMiniSession.ts` / `useMiniSession(live, caseId)` | เริ่ม LIFF → อ่าน case หลัง init → ถ้ายังไม่ login แสดงปุ่ม → ถ้า login แล้วโหลดผลเดิม และแชร์ผ่าน Outlet | ยกเลิกคำขอเมื่อเปลี่ยนเคสหรือรอเกิน 30 วินาที; ไม่เปิดผลเก่าระหว่างเปลี่ยนเคส |
 | `pages/MiniLiveEntry.tsx` | URL ไม่มี case → หน้าประวัติดีไซน์ใหม่; มี case → รายละเอียดของเคสนั้น | เปิด LIFF เปล่า ๆ ได้โดยไม่ขึ้นว่ารหัสเคสผิด |
 | `pages/MiniLiveDetail.tsx` | อ่าน session จาก Outlet → แสดงผลเดิมหรือการ์ดสถานะในดีไซน์เดียวกัน | มีมาสคอตและเมนูครบแม้กำลังโหลดหรือเปิดไม่ได้ |
@@ -23,6 +26,17 @@
 | `App.tsx` | เพิ่ม `/mini/result` นอกระบบรหัส Dashboard | หน้า Mini App ใช้ LINE Login แยกจากผู้ดูแล |
 | `mini.css` | เก็บธีมเดิม เพิ่มการตัดข้อความยาวในผลจริง | รองรับข้อความ URL ยาวโดยไม่ดันจอแนวนอน |
 | `vite.config.ts` | `/api/mini` → Bot API พอร์ต 8001; `/api` อื่น → Dashboard 8000 | ตั้งพอร์ตผิดจะโหลดไม่ได้ ต้องแก้ให้ตรงบริการ |
+
+### ฝั่ง backend (repo `scam-bot-backend` แยกจาก frontend)
+
+| ไฟล์ / ฟังก์ชัน | รับอะไร → ทำอะไร → คืนอะไร | ถ้าพัง |
+|---|---|---|
+| `mini_api.py` / `verify_line_owner()` | header `Authorization: Bearer <ID token>` → ส่งให้ LINE ตรวจ แล้วเช็ก `iss`, `aud`, `exp` → คืน `sub` (รหัสผู้ใช้ LINE) | token ผิด/หมดอายุ 401; ติดต่อ LINE ไม่ได้ 503 โดยไม่ส่ง error ดิบกลับ |
+| `mini_api.py` / `create_mini_router()` | สร้าง 3 endpoint: GET/DELETE `/api/mini/history`, GET `/api/mini/cases/{id}` ทุกตัวเรียก `verify_line_owner()` ก่อน | เคสไม่มี/ถูกลบ/ไม่ใช่เจ้าของ ตอบ 404 ข้อความเดียวกัน; ฐานข้อมูลล่ม 503 |
+| `mini_history.py` / `list_cases(owner)` | กรอง `detection_logs` ตามเจ้าของ แชตส่วนตัว และ 3 สถานะ → คืน 50 รายการล่าสุด (มีแค่หัวข้อ ไม่มีข้อความเต็ม) | Supabase ขัดข้องกลายเป็น `HistoryUnavailable` |
+| `mini_history.py` / `get_case(case_hex, owner)` | รหัส 32 ตัว + เจ้าของ → อ่านแถวเดียว → `build_case_detail()` | รหัสผิดรูปแบบคืน `None` โดยไม่ถามฐานข้อมูล |
+| `mini_history.py` / `delete_all(owner)` | ลบทุกแถวแชตส่วนตัวของเจ้าของ → คืนจำนวนที่ผู้ใช้เห็นในหน้าประวัติ | ไม่แตะข้อความในกลุ่ม |
+| `learning.py` / `case_category(text)` | ข้อความ → มี `http://`, `https://` หรือ `www.` คืน `link` ไม่มีคืน `message` | ใช้เลือกไอคอนเท่านั้น ไม่ได้ตัดสินความเสี่ยง; ลิงก์แบบ `bit.ly/abc` ที่ไม่มี http/www ยังนับเป็น `message` |
 
 `useMiniSession()` เปรียบเทียบรหัสใน state กับรหัสที่กำลังเปิด หากไม่ตรงจะคืนสถานะกำลังโหลด
 โดยไม่คืนรายละเอียดเก่า เมนูใช้ `miniHref()` สร้างลิงก์พร้อมรหัสเดิม ทุกเส้นทางจริงอยู่ใต้
@@ -59,9 +73,15 @@ LIFF ID ต้องตรง `MINI_LIFF_ID` ของบอต ส่วน `LI
 
 เว็บที่ deploy ต้องคืน `index.html` สำหรับการเปิด `/mini/result` โดยตรง
 อย่าใส่ secret ในตัวแปร `VITE_`; ค่าจะถูกรวมในไฟล์ JavaScript สาธารณะ
-หลังตั้งค่าให้ restart Vite / build เว็บใหม่ และ restart บอต (เคสเก่าจะหายตามเดิม)
+หลังตั้งค่าให้ restart Vite / build เว็บใหม่ และ restart บอต (เคสเก่าไม่หาย เพราะเก็บใน Supabase)
 
-## ผลตรวจในเครื่อง 16 ตุลาคม 2569
+## ผลตรวจในเครื่อง 28 ตุลาคม 2569 (หลังลง Windows ใหม่)
+
+- `npm run test:mini`: ผ่าน 34 tests (จำลอง LIFF/เครือข่าย)
+- backend `pytest tests`: ผ่าน 294 tests รวมเทสต์ใหม่ของ `case_category()` (ใช้ Supabase จำลอง)
+- ยังไม่ได้ทดสอบซ้ำกับ LINE จริงบนเครื่องใหม่ เพราะยังไม่ได้ตั้ง `.env.local` และ `.env` ของบอต
+
+## ผลตรวจในเครื่อง 16 ตุลาคม 2569 (บันทึกเดิม)
 
 - `npm.cmd run test:mini`: 12 tests จำลองเครือข่าย/LIFF ผ่าน รวม token header,
   401/404/503, JSON เสีย, เคสคนละ ID, abort, render เหตุผล/คำแนะนำ, escape HTML
