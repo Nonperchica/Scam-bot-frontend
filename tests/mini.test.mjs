@@ -351,3 +351,31 @@ test('Login บน HTTPS เก็บเฉพาะรหัสเคส แล
   assert.throws(() => miniLoginTarget('http://localhost:5174', '123-abc?redirect=evil', caseId));
   assert.throws(() => miniLoginTarget('http://localhost:5174', '1234567890-TestApp', 'bad&token=secret'));
 });
+
+test('อ่านโปรไฟล์ LINE เฉพาะชื่อที่มีจริงและรูป HTTPS', async () => {
+  const { readLineProfile } = await server.ssrLoadModule('/src/mini/services/miniLiff.ts');
+  assert.deepEqual(readLineProfile({ displayName: '  มิกกี้  ', pictureUrl: 'https://profile.line-scdn.net/abc' }),
+    { displayName: 'มิกกี้', pictureUrl: 'https://profile.line-scdn.net/abc' });
+  assert.deepEqual(readLineProfile({ displayName: 'มิกกี้', pictureUrl: 'javascript:alert(1)' }), { displayName: 'มิกกี้', pictureUrl: undefined });
+  assert.equal(readLineProfile({ displayName: '   ' }), undefined);
+  assert.equal(readLineProfile(null), undefined);
+});
+
+test('หน้าบัญชีแสดงชื่อและรูปจาก LINE ถ้ามี และยังมีมาสคอตเดิม', async () => {
+  const MiniSettings = (await server.ssrLoadModule('/src/mini/pages/MiniSettings.tsx')).default;
+  const markup = renderWithContext(MiniSettings, liveContext({ signedIn: true,
+    profile: { displayName: 'มิกกี้', pictureUrl: 'https://profile.line-scdn.net/abc' } }));
+  assert.match(markup, /มิกกี้/);
+  assert.match(markup, /src="https:\/\/profile\.line-scdn\.net\/abc"/);
+  assert.match(markup, /heart\.png/);
+  assert.match(renderWithContext(MiniSettings, liveContext({ signedIn: true })), /เพื่อนของ Eh\?Bot/);
+  // ปุ่มลบอยู่หลังเนื้อหาอื่นทั้งหมด
+  assert.ok(markup.indexOf('ลบประวัติทั้งหมด') > markup.indexOf('เกี่ยวกับ Eh?Bot'));
+});
+
+test('หน้าเคสแสดงคำแนะนำก่อนข้อความ และมีคำเตือนจุดเดียว', () => {
+  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
+    React.createElement(MiniCaseDetail, { detectionCase: detail, live: true })));
+  assert.ok(markup.indexOf('แนะนำให้ทำ') < markup.indexOf('ข้อความที่ตรวจ'));
+  assert.equal(markup.match(/ไม่ใช่การตรวจซ้ำ/g).length, 1);
+});

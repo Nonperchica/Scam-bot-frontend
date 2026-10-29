@@ -120,6 +120,7 @@
 .mini-lesson-hero h1 { font-size: 26px; }
 .mini-lesson-hero p { margin-top: 6px; }
 .mini-lessons-body { padding-top: 10px; }
+.mini-topic-heading { margin: 22px 0 10px; font-size: 16px; color: var(--mini-muted); }
 .mini-topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
 .mini-topic-button { display: flex; align-items: center; gap: 9px; min-height: 91px; padding: 15px 12px; border: 1px solid #eee3ec; border-radius: 20px; background: white; text-align: left; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px #5a354407; }
 .mini-topic-button[aria-pressed='true'] { border: 2px solid #f17aa7; padding: 14px 11px; background: linear-gradient(125deg, #fff0f6, #fff9fc); }
@@ -141,6 +142,9 @@
 .mini-faq { margin-top: 22px; }
 .mini-profile { display: flex; align-items: center; gap: 15px; margin: 0 0 21px; }
 .mini-profile .mini-mascot { width: 91px; height: 91px; padding: 4px; border-radius: 50%; background: #fffdf3; box-shadow: 0 0 0 5px #fff; }
+.mini-line-account { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.mini-line-account img { width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 3px #fff; }
+.mini-line-account h2 { overflow-wrap: anywhere; }
 .mini-profile h1, .mini-profile h2 { font-size: 20px; margin-bottom: 3px; }
 .mini-font-buttons { display: flex; gap: 10px; }
 .mini-font-buttons button { flex: 1; min-height: 53px; padding: 14px 8px; border: 1px solid #e4dae3; border-radius: 15px; background: white; color: #624662; font-size: 15px; }

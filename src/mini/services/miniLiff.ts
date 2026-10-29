@@ -5,6 +5,32 @@ export interface MiniLiff {
   login(options: { redirectUri: string }): void;
   isInClient(): boolean;
   closeWindow(): void;
+  getProfile(): Promise<unknown>;
+}
+
+export interface LineProfile {
+  displayName: string;
+  pictureUrl?: string;
+}
+
+// ข้อมูลโปรไฟล์ใช้แสดงผลเท่านั้น ห้ามใช้ยืนยันเจ้าของเคส (backend ตรวจ ID token แทน)
+export function readLineProfile(value: unknown): LineProfile | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const profile = value as Record<string, unknown>;
+  if (typeof profile.displayName !== 'string') return undefined;
+  const displayName = profile.displayName.trim().slice(0, 60);
+  if (!displayName) return undefined;
+  // รับเฉพาะรูปผ่าน HTTPS ค่าแปลกหรือ javascript: จะไม่ถูกใส่ใน <img>
+  let pictureUrl: string | undefined;
+  if (typeof profile.pictureUrl === 'string') {
+    try {
+      const url = new URL(profile.pictureUrl);
+      if (url.protocol === 'https:') pictureUrl = url.href;
+    } catch {
+      pictureUrl = undefined;
+    }
+  }
+  return { displayName, pictureUrl };
 }
 
 declare global {

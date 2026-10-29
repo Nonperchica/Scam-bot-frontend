@@ -21,6 +21,12 @@ export default function MiniLessons() {
     <>
       <section className="mini-lesson-hero"><MiniMascot pose="book" /><h1>เอ๊ะให้ทัน ก่อนเชื่อ</h1><p className="mini-secondary">จำจุดสังเกตง่าย ๆ ไปใช้ในแชตจริง</p></section>
       <div className="mini-page-body mini-lessons-body">
+        {/* เนื้อหาอยู่เหนือปุ่มหัวข้อ กดเลือกแล้วเห็นสิ่งที่เปลี่ยนโดยไม่ต้องเลื่อนจอ */}
+        {sourceCase && <details className="mini-card"><summary>เรียนรู้จาก: {sourceCase.title}</summary><h2>{sourceCase.learningTopic}</h2><p>{sourceCase.learningExplanation}</p><p>{sourceCase.checkingAdvice}</p></details>}
+        <section className="mini-example-scene" aria-live="polite"><p className="mini-secondary">ตัวอย่างข้อความสมมติ</p><blockquote>{selectedLesson.exampleBefore}<mark>{selectedLesson.highlightedText}</mark>{selectedLesson.exampleAfter}</blockquote><h2><Lightbulb aria-hidden="true" />{selectedLesson.advice}</h2></section>
+        <p className="mini-lesson-explanation">{selectedLesson.explanation}</p>
+        <p className="mini-note">ตัวอย่างใช้เป็นจุดสังเกต ต้องดูบริบทประกอบ การพบคำเดียวไม่ยืนยันการหลอกลวง</p>
+        <h2 className="mini-topic-heading">เลือกหัวข้ออื่น</h2>
         <div className="mini-topic-grid" aria-label="เลือกหัวข้อเรียนรู้">
           {lessonTopics.map((lesson) => {
             const LessonIcon = lessonIcons[lesson.id];
@@ -32,10 +38,6 @@ export default function MiniLessons() {
             );
           })}
         </div>
-        {sourceCase && <details className="mini-card"><summary>เรียนรู้จาก: {sourceCase.title}</summary><h2>{sourceCase.learningTopic}</h2><p>{sourceCase.learningExplanation}</p><p>{sourceCase.checkingAdvice}</p></details>}
-        <section className="mini-example-scene" aria-live="polite"><p className="mini-secondary">ตัวอย่างข้อความสมมติ</p><blockquote>{selectedLesson.exampleBefore}<mark>{selectedLesson.highlightedText}</mark>{selectedLesson.exampleAfter}</blockquote><h2><Lightbulb aria-hidden="true" />{selectedLesson.advice}</h2></section>
-        <p className="mini-lesson-explanation">{selectedLesson.explanation}</p>
-        <p className="mini-note">ตัวอย่างใช้เป็นจุดสังเกต ต้องดูบริบทประกอบ การพบคำเดียวไม่ยืนยันการหลอกลวง</p>
         {session.live && session.detail ? <Link to={session.miniHref('detail')} className="mini-learning-link"><FileSearch aria-hidden="true" /><span>กลับไปดูผลตรวจเดิม</span><ChevronRight aria-hidden="true" /></Link> : sourceCase ? <Link to={`/mini/cases/${sourceCase.id}`} className="mini-learning-link"><FileSearch aria-hidden="true" /><span>กลับไปดูผลตรวจเดิม</span><ChevronRight aria-hidden="true" /></Link> : <Link to={session.miniHref('help')} className="mini-learning-link"><FileSearch aria-hidden="true" /><span>ดูวิธีใช้ Eh?Bot</span><ChevronRight aria-hidden="true" /></Link>}
       </div>
     </>

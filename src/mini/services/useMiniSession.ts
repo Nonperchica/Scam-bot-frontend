@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { deleteMiniHistory, fetchMiniCase, fetchMiniHistory } from './miniApi';
 import type { MiniCaseData, MiniHistoryItem } from './miniApi';
-import { initializeMiniLiff, miniLoginTarget } from './miniLiff';
-import type { MiniLiff } from './miniLiff';
+import { initializeMiniLiff, miniLoginTarget, readLineProfile } from './miniLiff';
+import type { LineProfile, MiniLiff } from './miniLiff';
 
 interface SessionView {
   caseId: string;
@@ -86,6 +86,17 @@ export function useMiniSession(live: boolean, caseId: string) {
     return () => controller.abort();
   }, [live, signedInLiff, historyRevision]);
 
+  // ชื่อและรูปจาก LINE (ต้องเปิด scope profile ใน LIFF); อ่านไม่ได้ก็ใช้ข้อความเดิม หน้าไม่พัง
+  const [profile, setProfile] = useState<LineProfile | undefined>();
+  useEffect(() => {
+    if (!live || !signedInLiff) return;
+    let active = true;
+    signedInLiff.getProfile()
+      .then(value => { if (active) setProfile(readLineProfile(value)); })
+      .catch(() => { if (active) setProfile(undefined); });
+    return () => { active = false; };
+  }, [live, signedInLiff]);
+
   function reloadHistory() {
     setHistory(current => ({ ...current, loading: true, error: '' }));
     setHistoryRevision(value => value + 1);
@@ -133,7 +144,8 @@ export function useMiniSession(live: boolean, caseId: string) {
     error: live ? view.error : undefined, needsLogin: live && view.login,
     signedIn: Boolean(view.liff?.isLoggedIn()), retry, login, canReturnToLine, returnToLine, miniHref,
     history: live ? history.items : [], historyLoading: live && history.loading,
-    historyError: live ? history.error : '', reloadHistory, deleteHistory };
+    historyError: live ? history.error : '', reloadHistory, deleteHistory,
+    profile: live ? profile : undefined };
 }
 
 export type MiniSession = ReturnType<typeof useMiniSession>;

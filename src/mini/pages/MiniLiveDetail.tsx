@@ -15,7 +15,6 @@ export default function MiniLiveDetail() {
       <div className="mini-page-body"><MiniSessionNotice /></div>
     </>}
     <div className="mini-page-body mini-live-footer">
-      <p className="mini-note">คำแนะนำจากผลเดิม · เคสเปิดได้ 15 นาที<br />ไม่มีการตรวจซ้ำหรือยืนยันตัวตนผู้ส่ง</p>
       <MiniChatButton label="กลับไปแชต LINE" />
     </div>
   </>;

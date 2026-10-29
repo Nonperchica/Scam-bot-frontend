@@ -18,11 +18,17 @@ export default function MiniCaseDetail({ detectionCase, live = false, learningHr
       <MiniPageHeading title="รายละเอียดผลตรวจ" pose={statusMascots[detectionCase.status]} />
       <div className="mini-page-body mini-detail-body">
         <section className={`mini-result-banner ${detectionCase.status}`}><span className="mini-result-shield"><StatusIcon aria-hidden="true" /></span><div><h2>{statusLabels[detectionCase.status]}</h2><p>{statusAdvice[detectionCase.status]}</p></div></section>
+        {/* คำแนะนำอยู่ใต้ผลทันที ผู้ใช้เห็นว่าต้องทำอะไรโดยไม่ต้องเลื่อนจอ */}
+        <section className="mini-card mini-mint"><div className="mini-advice-row"><span className="mini-advice-icon"><Lightbulb aria-hidden="true" /></span><div><h2>แนะนำให้ทำ</h2>{!isRisk && <p>{detectionCase.nextSteps[0]}</p>}</div></div>
+          {/* ผลเสี่ยง: คำแนะนำสำคัญที่สุด จึงแสดงครบทุกข้อทันที ผลอื่นพับข้อที่เหลือไว้ */}
+          {isRisk
+            ? <ol className="mini-steps">{detectionCase.nextSteps.map((step) => <li key={step}>{step}</li>)}</ol>
+            : <details><summary>ดูคำแนะนำเพิ่มเติม</summary><ol className="mini-steps">{detectionCase.nextSteps.slice(1).map((step) => <li key={step}>{step}</li>)}</ol></details>}
+        </section>
         <section className="mini-card"><h2>ข้อความที่ตรวจ</h2><blockquote>{detectionCase.message}</blockquote><p className="mini-secondary"><time dateTime={detectionCase.receivedAt}>{formatCaseTime(detectionCase.receivedAt)}</time></p></section>
         {live && <section className="mini-card"><h2>เหตุผลจากผลตรวจเดิม</h2><p>{detectionCase.reason}</p></section>}
         <section className="mini-card">
           <h2>{live ? 'หัวข้อที่ควรตรวจเพิ่ม' : detectionCase.status === 'no_risk_found' ? 'สิ่งที่พบในข้อความ' : 'จุดที่ควรระวัง'}</h2>
-          {live && <p className="mini-secondary">เลือกจากคำที่พบในข้อความ อาจเป็นข่าวหรือคำเตือนภัย จึงไม่ใช่หลักฐานยืนยันการหลอกลวง</p>}
           {detectionCase.warningPoints.map((point) => {
             const WarningIcon = warningIcons[point.icon];
             return (
@@ -34,14 +40,8 @@ export default function MiniCaseDetail({ detectionCase, live = false, learningHr
           })}
           {!live && <details><summary>อ่านเหตุผลเพิ่มเติม</summary><p>{detectionCase.reason}</p></details>}
         </section>
-        <section className="mini-card mini-mint"><div className="mini-advice-row"><span className="mini-advice-icon"><Lightbulb aria-hidden="true" /></span><div><h2>แนะนำให้ทำ</h2>{!isRisk && <p>{detectionCase.nextSteps[0]}</p>}</div></div>
-          {/* ผลเสี่ยง: คำแนะนำสำคัญที่สุด จึงแสดงครบทุกข้อทันที ผลอื่นพับข้อที่เหลือไว้ */}
-          {isRisk
-            ? <ol className="mini-steps">{detectionCase.nextSteps.map((step) => <li key={step}>{step}</li>)}</ol>
-            : <details><summary>ดูคำแนะนำเพิ่มเติม</summary><ol className="mini-steps">{detectionCase.nextSteps.slice(1).map((step) => <li key={step}>{step}</li>)}</ol></details>}
-        </section>
         {(!live || learningHref) && <Link to={learningHref || `/mini/lessons?topic=${detectionCase.lessonId}&case=${detectionCase.id}`} className="mini-learning-link"><BookOpen aria-hidden="true" /><span>เรียนรู้จากเคสนี้</span><ChevronRight aria-hidden="true" /></Link>}
-        <p className="mini-note"><Info aria-hidden="true" /><span>คำแนะนำจากผลเดิม ไม่ใช่การตรวจซ้ำ<br />ไม่ยืนยันตัวตนผู้ส่งหรือความปลอดภัยของลิงก์</span></p>
+        <p className="mini-note"><Info aria-hidden="true" /><span>คำแนะนำจากผลเดิม ไม่ใช่การตรวจซ้ำ หัวข้อเลือกจากคำที่พบ ไม่ใช่หลักฐานยืนยันการหลอกลวง<br />ไม่ยืนยันตัวตนผู้ส่งหรือความปลอดภัยของลิงก์</span></p>
         {!live && <MiniChatButton label="กลับไปแชต LINE" />}
       </div>
     </>
