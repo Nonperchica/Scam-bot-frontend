@@ -1,8 +1,9 @@
 # Live dashboard
 
-Uses existing `detection_logs` and `line_sources` tables. No migration is required.
+History views use existing `detection_logs` and `line_sources` tables without a migration.
 Do not run the old `supabase_schema.sql`: it describes the earlier demo schema.
-The LINE bot remains a separate service. This API only reads existing history.
+The LINE bot remains a separate service. Dataset approvals and skips write review data;
+see `DATASET_SETUP.md` for their database setup.
 
 ## Local setup
 
@@ -11,6 +12,15 @@ The LINE bot remains a separate service. This API only reads existing history.
 3. Install `backend/requirements.txt` in a virtual environment.
 4. On Windows, from the project root run `npm run backend`. This uses `backend/.venv/Scripts/python.exe` directly, so Python does not need to be on PATH. Leave this terminal running.
 5. Run `npm run dev`. Enter the dashboard token when prompted; it is kept in session storage for this tab. Close the tab to clear it.
+
+For Dataset comparison and approval, set `GEMINI_API_KEY` in `backend/.env`
+or the server environment for both local use and deployment. `database.py`
+loads `backend/.env`; frontend `.env.local` and the bot's `.env` are not used.
+An existing environment variable takes precedence over `backend/.env`.
+Restart the backend after changing the key. Never put it in a `VITE_*` variable.
+Without the key, embedding requests return HTTP 503 with a configuration message;
+history reads do not require Gemini. Comparison and approval send the reviewed
+message to Gemini to generate its embedding.
 
 For deployment, use HTTPS and configure allowed frontend origins in `backend/main.py`. Set `VITE_API_URL` before building if the API has a separate host. Never use the Supabase service key as the dashboard token. The shared dashboard token is a first-stage access gate, not individual admin accounts; `dashboard_admins` is not used yet.
 
@@ -33,7 +43,7 @@ The global `python` command can point to the Microsoft Store shortcut even when 
 - Excludes known synthetic records by `backend-smoke-` event/source prefix and `[TEST] Synthetic` message prefix. Other user-submitted test messages remain included; automatic classification of test intent is not attempted.
 - Group cards and threat history use all recorded history. Group graph uses the latest seven days.
 - Missing members, join date, sender and confidence are shown as unavailable. Source IDs are not sender IDs.
-- Dataset page remains explicitly marked as demo, outside the history integration.
+- Dataset supports real review, comparison, approval and skip actions; see `DATASET_SETUP.md`.
 - Reads are paginated to avoid the Supabase per-response row cap. This initial implementation aggregates in the API; for large histories, move aggregation into a reviewed SQL function/view.
 
 ## Checks

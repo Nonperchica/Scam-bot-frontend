@@ -23,9 +23,13 @@ changed for this integration.
 
 Approval uses the edited message, the chosen spam/ham label and a Gemini
 embedding (gemini-embedding-001, retrieval_document, 768 dimensions).
-Configure GEMINI_API_KEY in backend/.env when deploying. For this local
-two-repository layout only, the API can read that one key from the sibling
-bot's .env when the dashboard key is absent. Secrets stay server-side.
+Configure GEMINI_API_KEY in backend/.env or the server environment for both
+local use and deployment. Existing environment variables take precedence.
+The API does not read frontend .env.local or the bot's .env. Restart the
+dashboard API after changing the key. Without it, embedding requests return
+HTTP 503 with a configuration message. Never use a VITE_* variable for this
+key. Secrets stay server-side; comparison and approval send the reviewed
+message to Gemini for embedding.
 
 The database function inserts the vector and records the review in one
 transaction. Repeating an approval returns the saved entry. A conflicting

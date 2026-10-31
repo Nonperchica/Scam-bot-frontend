@@ -3,7 +3,7 @@ import sys
 import unittest
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from fastapi.testclient import TestClient
@@ -105,10 +105,31 @@ class DashboardTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.json()["totalScanned"], 0)
                 self.assertEqual(client.get("/api/line-groups", headers=headers).json(), [])
-            with patch("routers.dashboard.sources_and_logs", side_effect=RuntimeError("secret-value")):
+            with patch("routers.dashboard.sources_and_logs", side_effect=RuntimeError("secret-value")), \
+                 self.assertLogs("routers.dashboard", level="ERROR") as captured:
                 response = client.get("/api/dashboard", headers=headers)
                 self.assertEqual(response.status_code, 503)
                 self.assertNotIn("secret-value", response.text)
+            self.assertIn("error_type=RuntimeError", captured.output[0])
+            self.assertNotIn("secret-value", "\n".join(captured.output))
+            self.assertIsNone(captured.records[0].exc_info)
+
+    def test_read_failure_logs_page_and_preserves_error_without_partial_results(self):
+        db = Mock()
+        query = db.table.return_value.select.return_value.order.return_value
+        error = TimeoutError("secret-value private-message")
+        query.range.return_value.execute.side_effect = [Mock(data=[{}] * 500), error]
+        with patch.object(live_data, "get_supabase_client", return_value=db), \
+             patch.object(live_data, "monotonic", side_effect=[10.0, 11.0, 13.5]), \
+             self.assertLogs("live_data", level="ERROR") as captured:
+            with self.assertRaises(TimeoutError) as raised:
+                live_data.read_all("detection_logs")
+        self.assertIs(raised.exception, error)
+        self.assertEqual(len(captured.output), 1)
+        self.assertIn("table=detection_logs page=2 elapsed=2.50s error_type=TimeoutError", captured.output[0])
+        self.assertNotIn("secret-value", captured.output[0])
+        self.assertNotIn("private-message", captured.output[0])
+        self.assertIsNone(captured.records[0].exc_info)
 
 
 if __name__ == "__main__":

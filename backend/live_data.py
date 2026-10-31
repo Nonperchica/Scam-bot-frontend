@@ -1,20 +1,30 @@
 """Read-only dashboard adapter for the existing bot history schema."""
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
+import logging
+from time import monotonic
 
 from database import get_supabase_client
 
 BKK = timezone(timedelta(hours=7))
+logger = logging.getLogger(__name__)
 
 
 def read_all(table, columns="*", **filters):
     # Supabase caps individual responses; never silently truncate aggregates.
     rows = []
     while True:
-        query = get_supabase_client().table(table).select(columns).order("id")
-        for key, value in filters.items():
-            query = query.eq(key, value)
-        batch = query.range(len(rows), len(rows) + 499).execute().data or []
+        started = monotonic()
+        try:
+            query = get_supabase_client().table(table).select(columns).order("id")
+            for key, value in filters.items():
+                query = query.eq(key, value)
+            batch = query.range(len(rows), len(rows) + 499).execute().data or []
+        except Exception as error:
+            # ไม่บันทึกข้อความ exception เพราะอาจมีคีย์หรือข้อมูลผู้ใช้
+            logger.error("read_all failed table=%s page=%d elapsed=%.2fs error_type=%s",
+                         table, len(rows) // 500 + 1, monotonic() - started, type(error).__name__)
+            raise
         rows.extend(batch)
         if len(batch) < 500:
             return rows

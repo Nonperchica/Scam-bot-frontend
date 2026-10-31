@@ -3,13 +3,11 @@ import math
 import hashlib
 import json
 import os
-from pathlib import Path
 from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
-from dotenv import dotenv_values
 
 from database import get_supabase_client
 from live_data import read_all, sources_and_logs
@@ -92,10 +90,6 @@ def dataset_candidates():
 
 def embedding(text):
     key = os.getenv("GEMINI_API_KEY")
-    if not key:
-        # ใช้คีย์บอตเฉพาะการรันในเครื่องนี้ ไม่คัดลอก secret ลงไฟล์หรือส่งไป browser
-        bot_env = Path(__file__).resolve().parents[3] / "scam-bot-backend" / "scam-bot-backend" / ".env"
-        key = dotenv_values(bot_env).get("GEMINI_API_KEY")
     if not key:
         raise HTTPException(503, "ต้องตั้ง GEMINI_API_KEY ใน backend/.env")
     from google import genai

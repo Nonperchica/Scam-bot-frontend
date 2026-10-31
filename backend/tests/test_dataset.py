@@ -26,6 +26,28 @@ class DatasetTests(unittest.TestCase):
         self.assertEqual(response.json()[0]['id'], '1')
         self.assertNotIn('embedding', response.json()[0])
 
+    def test_embedding_without_key_does_not_read_bot_env_or_call_gemini(self):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": ""}), \
+             patch('dotenv.dotenv_values') as read_env, \
+             patch('google.genai.Client') as client:
+            with self.assertRaises(dataset.HTTPException) as error:
+                dataset.embedding('synthetic test message')
+        self.assertEqual(error.exception.status_code, 503)
+        self.assertIn('GEMINI_API_KEY', error.exception.detail)
+        read_env.assert_not_called()
+        client.assert_not_called()
+
+    def test_embedding_uses_configured_key_and_returns_vector(self):
+        vector = [0.1] * 768
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "offline-test-key"}), \
+             patch('google.genai.Client') as client:
+            embed = client.return_value.__enter__.return_value.models.embed_content
+            embed.return_value.embeddings = [Mock(values=vector)]
+            result = dataset.embedding('synthetic test message')
+        self.assertEqual(client.call_args.kwargs['api_key'], 'offline-test-key')
+        self.assertEqual(embed.call_args.kwargs['contents'], 'synthetic test message')
+        self.assertEqual(result, vector)
+
     def test_queue_excludes_errors_and_reviewed_items(self):
         logs = [{"id": "a", "detection_status": "risk_found", "message_text": "risk"},
                 {"id": "b", "detection_status": "uncertain", "message_text": "unsure"},

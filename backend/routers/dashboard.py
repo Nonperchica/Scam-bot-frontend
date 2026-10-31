@@ -1,9 +1,12 @@
 """Dashboard reads only. No writes to the bot's tables or schema."""
 import os
 import secrets
+import logging
 from datetime import date
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from live_data import sources_and_logs, summary, groups, threat_logs, daily_report
+
+logger = logging.getLogger(__name__)
 
 
 def authorize(authorization: str = Header(default="")):
@@ -26,7 +29,9 @@ def auth_session():
 def history():
     try:
         return sources_and_logs()
-    except Exception:
+    except Exception as error:
+        # เก็บเฉพาะชนิด error เพื่อไม่เผยข้อมูลจาก exception
+        logger.error("dashboard history failed error_type=%s", type(error).__name__)
         raise HTTPException(503, "อ่านข้อมูล Supabase ไม่สำเร็จ กรุณาตรวจการตั้งค่า Backend") from None
 
 
