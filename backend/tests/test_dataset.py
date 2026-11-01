@@ -83,9 +83,12 @@ class DatasetTests(unittest.TestCase):
         ]
         with patch.object(dataset, 'get_supabase_client', return_value=db), \
              patch.object(dataset, 'candidates', return_value=[{'id': '00000000-0000-0000-0000-000000000001'}]), \
+             patch.object(dataset, 'existing_dataset_message', return_value=None), \
+             patch.object(dataset, 'suggest_label', return_value={'label': 'spam', 'reason': 'ชวนโอนเงิน'}), \
              patch.object(dataset, 'embedding', return_value=[0.1] * 768):
             result = dataset.preview_similarity('00000000-0000-0000-0000-000000000001', dataset.Review(message='new'))
         self.assertEqual(result['match'], {'message': 'existing', 'label': 'spam', 'similarity': 87})
+        self.assertEqual(result['suggestion']['label'], 'spam')
         self.assertEqual([call.args[0] for call in db.rpc.call_args_list], ['match_scam'])
 
     def test_similarity_preview_without_examples_returns_null(self):
@@ -93,9 +96,45 @@ class DatasetTests(unittest.TestCase):
         db.rpc.return_value.execute.return_value.data = []
         with patch.object(dataset, 'get_supabase_client', return_value=db), \
              patch.object(dataset, 'candidates', return_value=[{'id': '00000000-0000-0000-0000-000000000001'}]), \
+             patch.object(dataset, 'existing_dataset_message', return_value=None), \
+             patch.object(dataset, 'suggest_label', return_value={'label': 'unsure', 'reason': 'บริบทไม่พอ'}), \
              patch.object(dataset, 'embedding', return_value=[0.1] * 768):
             result = dataset.preview_similarity('00000000-0000-0000-0000-000000000001', dataset.Review(message='new'))
         self.assertIsNone(result['match'])
+
+    def test_exact_duplicate_skips_vector_and_ai(self):
+        duplicate = {'message': 'ข้อความเดิม', 'label': 'ham', 'similarity': 100.0}
+        with patch.object(dataset, 'candidates', return_value=[{'id': '00000000-0000-0000-0000-000000000001'}]), \
+             patch.object(dataset, 'existing_dataset_message', return_value=duplicate), \
+             patch.object(dataset, 'closest_dataset_message') as closest, \
+             patch.object(dataset, 'suggest_label') as ai:
+            result = dataset.preview_similarity('00000000-0000-0000-0000-000000000001', dataset.Review(message='ข้อความเดิม'))
+        self.assertTrue(result['duplicate'])
+        self.assertIsNone(result['suggestion'])
+        closest.assert_not_called()
+        ai.assert_not_called()
+
+    def test_ai_failure_does_not_block_manual_review(self):
+        with patch.object(dataset, 'candidates', return_value=[{'id': '00000000-0000-0000-0000-000000000001'}]), \
+             patch.object(dataset, 'existing_dataset_message', return_value=None), \
+             patch.object(dataset, 'closest_dataset_message', return_value=(None, [0.1] * 768)), \
+             patch.object(dataset, 'suggest_label', side_effect=RuntimeError('service unavailable')):
+            result = dataset.preview_similarity('00000000-0000-0000-0000-000000000001', dataset.Review(message='new'))
+        self.assertFalse(result['duplicate'])
+        self.assertIsNone(result['suggestion'])
+        self.assertTrue(result['aiWarning'])
+
+    def test_approval_rejects_exact_duplicate_before_embedding(self):
+        db = Mock()
+        db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
+        with patch.object(dataset, 'get_supabase_client', return_value=db), \
+             patch.object(dataset, 'candidates', return_value=[{'id': 'candidate'}]), \
+             patch.object(dataset, 'existing_dataset_message', return_value={'message': 'saved', 'label': 'spam', 'similarity': 100.0}), \
+             patch.object(dataset, 'closest_dataset_message') as closest:
+            with self.assertRaises(dataset.HTTPException) as error:
+                dataset.review('candidate', dataset.Review(message='saved', label='spam'), 'saved')
+        self.assertEqual(error.exception.status_code, 409)
+        closest.assert_not_called()
 
     def test_retry_returns_saved_entry_without_embedding(self):
         db = Mock()
@@ -110,7 +149,7 @@ class DatasetTests(unittest.TestCase):
         db = Mock()
         db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
         db.rpc.return_value.execute.side_effect = [Mock(data=[]), Mock(data={'status':'saved', 'entry':{'id':'1'}})]
-        with patch.object(dataset, 'get_supabase_client', return_value=db), patch.object(dataset, 'candidates', return_value=[{'id':'candidate'}]), patch.object(dataset, 'embedding', return_value=[0.1]*768) as embed:
+        with patch.object(dataset, 'get_supabase_client', return_value=db), patch.object(dataset, 'candidates', return_value=[{'id':'candidate'}]), patch.object(dataset, 'existing_dataset_message', return_value=None), patch.object(dataset, 'embedding', return_value=[0.1]*768) as embed:
             result = dataset.review('candidate', dataset.Review(message=' edited ', label='ham'), 'saved')
         embed.assert_called_once_with('edited')
         self.assertEqual(db.rpc.call_args.args[1]['p_message'], 'edited')
@@ -120,7 +159,7 @@ class DatasetTests(unittest.TestCase):
         db = Mock()
         db.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
         db.rpc.return_value.execute.return_value.data = [{'thai_text':'existing', 'label':'spam', 'similarity':0.94}]
-        with patch.object(dataset, 'get_supabase_client', return_value=db), patch.object(dataset, 'candidates', return_value=[{'id':'candidate'}]), patch.object(dataset, 'embedding', return_value=[0.1]*768):
+        with patch.object(dataset, 'get_supabase_client', return_value=db), patch.object(dataset, 'candidates', return_value=[{'id':'candidate'}]), patch.object(dataset, 'existing_dataset_message', return_value=None), patch.object(dataset, 'embedding', return_value=[0.1]*768):
             preview = dataset.review('candidate', dataset.Review(message='new', label='spam'), 'saved')
             self.assertEqual(preview['status'], 'review_required')
             self.assertEqual(preview['match']['similarity'], 94)

@@ -67,3 +67,55 @@ export function truncateText(text: string, maxLength: number = 80): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '…';
 }
+const URL_PATTERN = /(?:https?:\/\/|www\.)\S+/i;
+
+/**
+ * แยกประเภทข้อความและดึงเนื้อหาที่อ่านได้ (กรณีเป็นรูปภาพ OCR หรือลิงก์ URL)
+ * รับ: message (ข้อความดิบ), messageType (ประเภท 'text' | 'image' | 'link' ถ้ามี)
+ * ทำ: 
+ *   - ตรวจว่ามี prefix '[รูปภาพ]' หรือเป็น image หรือไม่ ถ้ามีให้ตัด prefix ออก
+ *   - ตรวจว่ามี URL/ลิงก์ หรือไม่ เพื่อจัดประเภทเป็น 'link'
+ * คืน: { isImage: boolean, isLink: boolean, displayText: string }
+ * ถ้าพัง: คืนข้อความเดิมเป็น text
+ */
+export function parseImageMessage(
+  message: string,
+  messageType?: 'text' | 'image' | 'link'
+): { isImage: boolean; isLink: boolean; displayText: string } {
+  if (!message) {
+    return {
+      isImage: messageType === 'image',
+      isLink: messageType === 'link',
+      displayText: '',
+    };
+  }
+
+  const trimmed = message.trim();
+  const hasImagePrefix = trimmed.startsWith('[รูปภาพ]');
+  const isImage = messageType === 'image' || hasImagePrefix;
+
+  if (hasImagePrefix) {
+    const ocrText = trimmed.slice('[รูปภาพ]'.length).trim();
+    return {
+      isImage: true,
+      isLink: false,
+      displayText: ocrText || '(รูปภาพ - ไม่พบข้อความ)',
+    };
+  }
+
+  if (isImage && !trimmed) {
+    return {
+      isImage: true,
+      isLink: false,
+      displayText: '(รูปภาพ - ไม่พบข้อความ)',
+    };
+  }
+
+  const isLink = messageType === 'link' || URL_PATTERN.test(trimmed);
+
+  return {
+    isImage: false,
+    isLink,
+    displayText: message,
+  };
+}

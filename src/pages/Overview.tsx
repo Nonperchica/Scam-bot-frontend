@@ -14,7 +14,6 @@ const riskLevels = [
   { key: 'high', name: 'เสี่ยงสูง', color: '#ef367f' },
   { key: 'medium', name: 'เสี่ยงปานกลาง', color: '#edb950' },
   { key: 'low', name: 'เสี่ยงต่ำ', color: '#35c8a1' },
-  { key: 'unknown', name: 'ไม่ระบุ', color: '#b9adbf' },
 ];
 const tooltipStyle = { border: '1px solid #ece7ee', borderRadius: 12, fontSize: 12, boxShadow: '0 8px 28px #29133112' };
 

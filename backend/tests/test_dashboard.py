@@ -45,6 +45,21 @@ class DashboardTests(unittest.TestCase):
     def test_empty_history(self):
         self.assertEqual(live_data.summary([])["riskRate"], 0)
 
+    def test_fallback_counts_method_and_legacy_status_once_within_period(self):
+        rows = [row("risk", "risk_found", True, decision_method="fallback", risk_level="medium"),
+                row("uncertain", "uncertain", decision_method="fallback"),
+                row("legacy", "fallback"),
+                row("both", "fallback", decision_method="fallback"),
+                row("regular", "risk_found", True, decision_method="unknown", risk_level="high"),
+                row("old", decision_method="fallback", timestamp="2026-09-01T00:00:00Z")]
+        result = live_data.summary(rows, datetime.fromisoformat("2026-10-03T10:00:00+07:00"))
+        self.assertEqual(result["statuses"]["fallback"], 4)
+        self.assertEqual(result["statuses"]["uncertain"], 1)
+        self.assertEqual(result["riskLevels"], {"medium": 1, "high": 1})
+        report = live_data.daily_report([], rows, datetime.fromisoformat("2026-10-03").date())
+        self.assertEqual(report["fallbackChecks"], 4)
+        self.assertEqual(live_data.summary([])["statuses"]["fallback"], 0)
+
     def test_filters_synthetic_but_keeps_private_history(self):
         sources = [{"id": "test", "line_source_id": "backend-smoke-test-group"}, {"id": "s1", "source_type": "user"}]
         rows = [row("real"), row("fake", line_event_id="backend-smoke-test-123")]
@@ -61,6 +76,16 @@ class DashboardTests(unittest.TestCase):
         self.assertIsNone(threat["confidence"])
         self.assertEqual(threat["senderId"], "")
         self.assertEqual(threat["riskLevel"], "unknown")
+
+    def test_threat_message_types_use_recorded_image_marker(self):
+        rows = [row("text", "risk_found", True, message_text="ข้อความน่าสงสัย"),
+                row("image", "risk_found", True, message_text="[รูปภาพ]"),
+                row("preview", "risk_found", True, message_preview="[รูปภาพ]"),
+                row("ocr", "risk_found", True, message_text="[รูปภาพ] สมัครงานออนไลน์"),
+                row("link", "risk_found", True, message_text="https://xahjv.buzz/scam"),
+                row("mention", "risk_found", True, message_text="ดู [รูปภาพ] นี้")]
+        types = {item["id"]: item["messageType"] for item in live_data.threat_logs([], rows)}
+        self.assertEqual(types, {"text": "text", "image": "image", "preview": "image", "ocr": "image", "link": "link", "mention": "text"})
 
     def test_leave_hides_group_but_preserves_history_and_rejoin(self):
         sources = [{"id": "s1", "source_type": "group", "display_name": "Test group", "is_active": True}]

@@ -14,6 +14,7 @@ export type ThreatStatus = 'blocked' | 'flagged' | 'reviewed' | 'pending';
 export interface ThreatLog {
   id: string;
   message: string;
+  messageType?: 'text' | 'image' | 'link';
   senderName: string;
   senderId: string;
   riskLevel: RiskLevel;

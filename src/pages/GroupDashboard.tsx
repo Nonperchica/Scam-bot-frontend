@@ -19,7 +19,7 @@ import { ArrowLeft, Users, ShieldAlert, ScanSearch, MessageSquare } from 'lucide
 import StatCard from '../components/StatCard';
 import PeriodSelector from '../components/PeriodSelector';
 import { fetchGroupById, fetchGroupTrendData, fetchGroupThreatLogs } from '../services/api';
-import { formatNumber } from '../utils/formatters';
+import { formatNumber, parseImageMessage } from '../utils/formatters';
 import { bangkokDate, bangkokToday } from '../utils/dashboardDate';
 import type { LineGroup, DashboardStats, ThreatLog, DashboardPeriod } from '../types';
 
@@ -216,13 +216,16 @@ export default function GroupDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {periodThreats.map((log) => (
-                  <tr key={log.id}>
-                    <td>
-                      <span className="threat-message-preview">
-                        {log.message.length > 60 ? log.message.slice(0, 60) + '...' : log.message}
-                      </span>
-                    </td>
+                {periodThreats.map((log) => {
+                  const { isImage, displayText } = parseImageMessage(log.message, log.messageType);
+                  return (
+                    <tr key={log.id}>
+                      <td title={log.message}>
+                        <span className="threat-message-preview">
+                          {isImage && <span title="ข้อความจากรูปภาพ (OCR)" style={{ marginRight: '4px' }}>🖼️</span>}
+                          {displayText.length > 60 ? displayText.slice(0, 60) + '...' : displayText}
+                        </span>
+                      </td>
                     <td title={log.senderId || undefined}>{log.senderName}{log.senderId && <small className="sender-id">{log.senderId.slice(-8)}</small>}</td>
                     <td>
                       <span className={`risk-badge risk-badge--${log.riskLevel}`}>
@@ -242,7 +245,8 @@ export default function GroupDashboard() {
                       })}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

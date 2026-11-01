@@ -1,3 +1,4 @@
+import re
 """Read-only dashboard adapter for the existing bot history schema."""
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
@@ -45,6 +46,10 @@ def is_threat(row):
     return row.get("is_scam") is True and row.get("detection_status") not in {"error", "conversation", "uncertain"}
 
 
+def used_fallback(row):
+    return row.get("decision_method") == "fallback" or row.get("detection_status") == "fallback"
+
+
 def summary(logs, now=None, period="week", target=None):
     now = now or datetime.now(BKK)
     today = now.astimezone(BKK).replace(hour=0, minute=0, second=0, microsecond=0)
@@ -69,6 +74,8 @@ def summary(logs, now=None, period="week", target=None):
     assessed = [r for r in recent if r.get("detection_status") in {"risk_found", "no_risk_found"}]
     levels = Counter(r.get("risk_level") or "unknown" for r in assessed)
     statuses = Counter(r.get("detection_status") or "unknown" for r in recent)
+    # Fallback is a decision method; its outcome can be risk_found or uncertain.
+    statuses["fallback"] = sum(used_fallback(r) for r in recent)
     return {
         "totalScanned": len(recent), "threatsDetected": threats,
         "riskRate": round(threats / len(recent) * 100, 2) if recent else 0,
@@ -101,7 +108,7 @@ def daily_report(sources, logs, report_date: date | None = None):
         "totalMessages": len(daily_logs),
         "threatsDetected": sum(is_threat(r) for r in daily_logs),
         "failedChecks": sum(r.get("detection_status") == "error" for r in daily_logs),
-        "fallbackChecks": sum(r.get("detection_status") == "fallback" for r in daily_logs),
+        "fallbackChecks": sum(used_fallback(r) for r in daily_logs),
         "warningFailures": sum(r.get("warning_attempted") is True and r.get("warning_sent") is False
                                for r in daily_logs),
         "groups": group_reports,
@@ -117,11 +124,24 @@ def groups(sources, logs):
             for s in sources if s.get("source_type") == "group" and s.get("is_active") is True]
 
 
+
+URL_PATTERN = re.compile(r"(?:https?://|www\.)\S+", re.IGNORECASE)
+
+
+def detect_message_type(text: str) -> str:
+    clean = (text or "").strip()
+    if clean.startswith("[รูปภาพ]"):
+        return "image"
+    if URL_PATTERN.search(clean):
+        return "link"
+    return "text"
+
 def threat_logs(sources, logs, source_id=None):
     names = {s["id"]: s.get("display_name") for s in sources}
     return [{"id": r["id"], "message": r.get("message_text") or r.get("message_preview") or "",
              "senderName": r.get("sender_display_name") or ("ผู้ใช้ LINE" if r.get("sender_user_id") else "ไม่ระบุผู้ส่ง"),
              "senderId": r.get("sender_user_id") or "", "riskLevel": r.get("risk_level") or "unknown",
+             "messageType": detect_message_type(r.get("message_text") or r.get("message_preview")),
              "confidence": None, "timestamp": r["received_at"], "status": "flagged",
              "category": "ยังไม่ระบุ", "lineGroupName": names.get(r.get("source_id"))}
             for r in sorted(logs, key=lambda r: r["received_at"], reverse=True)

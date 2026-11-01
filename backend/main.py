@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Senior Guard API",
-    description="Backend API สำหรับระบบตรวจจับสแกมในกลุ่ม LINE ผู้สูงอายุ",
+    description="Backend API สำหรับระบบตรวจจับสแกมในกลุ่ม LINE ",
     version="1.0.0",
     lifespan=lifespan,
 )

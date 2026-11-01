@@ -4,8 +4,9 @@
 
 import { useState } from 'react';
 import type { ThreatLog, SortDirection } from '../types';
-import { formatDate, getRiskLabel, getCategoryLabel, truncateText } from '../utils/formatters';
-import { ArrowUpDown } from 'lucide-react';
+import { formatDate, getRiskLabel, truncateText, parseImageMessage } from '../utils/formatters';
+import { ArrowUpDown, Eye } from 'lucide-react';
+import ThreatDetailModal from './ThreatDetailModal';
 
 interface ThreatTableProps {
   logs: ThreatLog[];
@@ -26,6 +27,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 export default function ThreatTable({ logs, compact = false }: ThreatTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('timestamp');
   const [sortDir, setSortDir] = useState<SortDirection>('desc');
+  const [selectedLog, setSelectedLog] = useState<ThreatLog | null>(null);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -57,43 +59,66 @@ export default function ThreatTable({ logs, compact = false }: ThreatTableProps)
         <thead>
           <tr>
             <th>ID</th>
+            <th>ประเภท</th>
             <th>ข้อความ</th>
             <th>ผู้ส่ง</th>
             <th aria-sort={sortKey === 'riskLevel' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
               <button className="table-sort-button" onClick={() => handleSort('riskLevel')}>ระดับเสี่ยง <ArrowUpDown size={12} /></button>
             </th>
-            <th>หมวดหมู่</th>
             <th aria-sort={sortKey === 'timestamp' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
               <button className="table-sort-button" onClick={() => handleSort('timestamp')}>เวลา <ArrowUpDown size={12} /></button>
             </th>
             <th>สถานะ</th>
+            <th>จัดการ</th>
           </tr>
         </thead>
         <tbody>
-          {display.length === 0 && <tr><td colSpan={7}>ไม่พบรายการความเสี่ยง</td></tr>}
-          {display.map((log) => (
-            <tr key={log.id}>
-              <td className="cell-id">{log.id}</td>
-              <td className="cell-message" title={log.message}>
-                {truncateText(log.message, compact ? 40 : 60)}
-              </td>
-              <td title={log.senderId || undefined}>{log.senderName}{log.senderId && <small className="sender-id">{log.senderId.slice(-8)}</small>}</td>
-              <td>
-                <span className={`badge badge--risk-${log.riskLevel}`}>
-                  {getRiskLabel(log.riskLevel)}
-                </span>
-              </td>
-              <td>{getCategoryLabel(log.category)}</td>
-              <td className="cell-time">{formatDate(log.timestamp)}</td>
-              <td>
-                <span className={statusConfig[log.status]?.className || 'badge'}>
-                  {statusConfig[log.status]?.label || log.status}
-                </span>
-              </td>
-            </tr>
-          ))}
+          {display.length === 0 && <tr><td colSpan={8}>ไม่พบรายการความเสี่ยง</td></tr>}
+          {display.map((log) => {
+            const { isImage, isLink, displayText } = parseImageMessage(log.message, log.messageType);
+            return (
+              <tr key={log.id} onClick={() => setSelectedLog(log)}>
+                <td className="cell-id">{log.id}</td>
+                <td>{isImage ? 'รูปภาพ' : isLink ? 'ลิงก์' : 'ข้อความ'}</td>
+                <td className="cell-message" title={log.message}>
+                  {isImage && <span title="ข้อความจากรูปภาพ (OCR)" style={{ marginRight: '6px' }}>🖼️</span>}
+                  {truncateText(displayText, compact ? 40 : 60)}
+                </td>
+                <td title={log.senderId || undefined}>{log.senderName}{log.senderId && <small className="sender-id">{log.senderId.slice(-8)}</small>}</td>
+                <td>
+                  <span className={`badge badge--risk-${log.riskLevel}`}>
+                    {getRiskLabel(log.riskLevel)}
+                  </span>
+                </td>
+                <td className="cell-time">{formatDate(log.timestamp)}</td>
+                <td>
+                  <span className={statusConfig[log.status]?.className || 'badge'}>
+                    {statusConfig[log.status]?.label || log.status}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className="table-detail-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedLog(log);
+                    }}
+                  >
+                    <Eye size={13} /> ดูรายละเอียด
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
+
+      {/* หน้าต่างป๊อปอัพแสดงรายละเอียดเต็ม */}
+      <ThreatDetailModal
+        log={selectedLog}
+        onClose={() => setSelectedLog(null)}
+      />
     </div>
   );
 }

@@ -938,7 +938,251 @@ select {
   max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--color-text-primary) !important;
+}
+
+.threat-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.threat-table tbody tr:hover {
+  background-color: var(--color-surface-2, #f6f2f8);
+}
+
+.table-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-accent, #ed367f);
+  background: var(--color-surface-2, #f6f2f8);
+  border: 1px solid var(--color-border, #ece7ef);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.table-detail-btn:hover {
+  background: var(--color-accent, #ed367f);
+  color: #ffffff;
+  border-color: var(--color-accent, #ed367f);
+}
+
+/* Threat Detail Modal */
+.threat-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(30, 18, 40, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.threat-modal-card {
+  background: var(--color-bg-primary, #ffffff);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 40px rgba(40, 22, 47, 0.18);
+  border: 1px solid var(--color-border, #ece7ef);
+  overflow: hidden;
+}
+
+.threat-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--color-border, #ece7ef);
+}
+
+.threat-modal-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.threat-modal-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid var(--color-border, #ece7ef);
+  color: var(--color-danger, #d52768);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.threat-modal-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.threat-modal-id {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  color: var(--color-text-tertiary);
+}
+
+.threat-modal-close-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.threat-modal-close-btn:hover {
+  background: #f5f5f5;
+  color: var(--color-text-primary);
+}
+
+.threat-modal-body {
+  padding: 22px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.threat-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  background: #ffffff;
+  border: 1px solid var(--color-border, #ece7ef);
+  padding: 16px 18px;
+  border-radius: 12px;
+}
+
+.threat-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.threat-modal-field label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+}
+
+.threat-modal-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.threat-modal-text-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: var(--color-text-primary);
+}
+
+.threat-modal-message-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.threat-modal-message-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.threat-modal-message-header label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.threat-modal-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #ece7ef);
+  background: #ffffff;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.threat-modal-copy-btn:hover {
+  border-color: var(--color-accent, #ed367f);
+  color: var(--color-accent, #ed367f);
+}
+
+.threat-modal-message-content {
+  background: var(--color-surface-1, #ffffff);
+  border: 1px solid var(--color-border, #ece7ef);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.threat-modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--color-border, #ece7ef);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.threat-modal-btn {
+  padding: 8px 22px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--color-border, #ece7ef);
+  background: #ffffff;
+  color: var(--color-text-primary);
+  transition: all 0.15s;
+}
+
+.threat-modal-btn:hover {
+  background: #f8f8f8;
 }
 
 .cell-time {
