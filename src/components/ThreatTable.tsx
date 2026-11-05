@@ -77,7 +77,7 @@ export default function ThreatTable({ logs, compact = false }: ThreatTableProps)
           {display.map((log) => {
             const { isImage, isLink, displayText } = parseImageMessage(log.message, log.messageType);
             return (
-              <tr key={log.id} onClick={() => setSelectedLog(log)}>
+              <tr key={log.id}>
                 <td className="cell-id">{log.id}</td>
                 <td>{isImage ? 'รูปภาพ' : isLink ? 'ลิงก์' : 'ข้อความ'}</td>
                 <td className="cell-message" title={log.message}>
@@ -100,10 +100,7 @@ export default function ThreatTable({ logs, compact = false }: ThreatTableProps)
                   <button
                     type="button"
                     className="table-detail-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedLog(log);
-                    }}
+                    onClick={() => setSelectedLog(log)}
                   >
                     <Eye size={13} /> ดูรายละเอียด
                   </button>

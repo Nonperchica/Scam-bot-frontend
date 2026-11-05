@@ -943,7 +943,6 @@ select {
 }
 
 .threat-table tbody tr {
-  cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
