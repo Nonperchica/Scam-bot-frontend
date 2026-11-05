@@ -10,8 +10,9 @@ export default function MiniDetail() {
     return <div className="mini-page-body"><section className="mini-card mini-empty">
       <MiniMascot pose="inspect" /><h1>เปิดผลตรวจนี้ไม่ได้</h1>
       <p>ไม่พบรหัสเคสนี้ในรายการตัวอย่าง</p>
-      <Link to="/mini" className="mini-primary-button">กลับไปหน้าประวัติ</Link>
+      <Link to="/mini/history" className="mini-primary-button">ไปหน้าประวัติ</Link>
     </section></div>;
   }
-  return <MiniCaseDetail detectionCase={detectionCase} />;
+  return <MiniCaseDetail detectionCase={detectionCase} recoveryHref="/mini/recovery"
+    learningHref={`/mini/lessons?topic=${detectionCase.lessonId}&case=${detectionCase.id}`} />;
 }

@@ -9,13 +9,12 @@ export default function MiniLiveDetail() {
   const session = useOutletContext<MiniLayoutContext>();
   const lessonBase = session.miniHref('lessons');
   const lessonHref = lessonBase + (lessonBase.includes('?') ? '&' : '?') + `topic=${session.detail?.lessonId || 'links'}`;
+  if (session.detail) {
+    return <MiniCaseDetail detectionCase={session.detail} learningHref={lessonHref} recoveryHref={session.miniHref('recovery')} />;
+  }
+  // ยังโหลดอยู่ ต้องล็อกอิน หรือเปิดไม่ได้: บอกสถานะ พร้อมทางกลับแชตและไปประวัติของตนเอง
   return <>
-    {session.detail ? <MiniCaseDetail detectionCase={session.detail} live learningHref={lessonHref} /> : <>
-      <MiniPageHeading title="รายละเอียดผลตรวจ" pose="inspect" />
-      <div className="mini-page-body"><MiniSessionNotice /></div>
-    </>}
-    <div className="mini-page-body mini-live-footer">
-      <MiniChatButton label="กลับไปแชต LINE" />
-    </div>
+    <MiniPageHeading title="รายละเอียดผลตรวจ" pose="inspect" />
+    <div className="mini-page-body"><MiniSessionNotice /><MiniChatButton label="กลับไปแชต LINE" /></div>
   </>;
 }

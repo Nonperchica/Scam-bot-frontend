@@ -1,4 +1,4 @@
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { RefreshCw } from 'lucide-react';
 import type { MiniLayoutContext } from '../sampleCases';
 import MiniMascot from './MiniMascot';
@@ -16,5 +16,7 @@ export default function MiniSessionNotice() {
     {session.loading && <p className="mini-note" role="status">กำลังยืนยันเจ้าของเคส โดยไม่ตรวจ AI ซ้ำ</p>}
     {session.needsLogin && <button type="button" className="mini-primary-button" onClick={session.login}>เข้าสู่ระบบ LINE</button>}
     {session.error && <button type="button" className="mini-secondary-button" onClick={session.retry}><RefreshCw aria-hidden="true" />ลองอีกครั้ง</button>}
+    {/* เคสไม่มี/ไม่มีสิทธิ์: พาไปประวัติของบัญชีที่ล็อกอินเอง โดยไม่พารหัสเคสนั้นไปเปิดซ้ำ */}
+    {session.error && session.caseId && <Link to="/mini/result/history" className="mini-text-link">ไปประวัติของฉัน</Link>}
   </section>;
 }

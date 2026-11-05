@@ -13,18 +13,20 @@ LINE Login เท่านั้น ดู [วิธีตั้งค่าแ
 
 | ไฟล์ | หน้าที่และเหตุผลที่เปลี่ยน |
 |---|---|
-| `MiniLayout.tsx` | หัวหน้า เมนูประวัติ/เรียนรู้/บัญชี และ state `largeText` ร่วมกันทุกหน้า |
+| `MiniLayout.tsx` | หัวหน้า และเมนู 4 ช่อง หน้าแรก/ประวัติ/เรียนรู้/บัญชี ส่ง session ให้ทุกหน้า (เอาปุ่มขนาดตัวอักษรออกแล้ว ใช้การขยายตัวอักษรของเครื่องแทน เพราะ CSS ใช้หน่วย `rem`) |
+| `pages/MiniHome.tsx` | หน้าแรก: ทักทาย ปุ่มตรวจข้อความใน LINE ผลตรวจล่าสุดจาก `session.history[0]` และวิธีใช้ 3 ขั้น โหลดไม่ได้แสดง error ไม่แสดงเคสสมมติแทน |
+| `pages/MiniRecovery.tsx` | หน้า “เผลอทำตามไปแล้ว?” เป็นร่าง ลิงก์ปิดไว้ด้วย `RECOVERY_READY = false` จนกว่าจะตรวจเนื้อหา |
 | `components/MiniMascot.tsx` | จับคู่ `pose` กับรูปและคำบรรยายภาพใน `mascotImages` |
 | `components/MiniPageHeading.tsx` | รับ `title` กับ `pose` เพื่อวางหัวข้อและมาสคอตแบบเดียวกัน |
 | `components/MiniChatButton.tsx` | ปุ่มร่วมเปิด `/mini/chat` ซึ่งยังเป็นแชตตัวอย่าง |
 | `sampleCases.ts` | ข้อมูลสมมติเดิม เพิ่ม `title`, `category`, `warningPoints` และ `lessonId` สำหรับการ์ดและบทเรียน |
 | `lessonTopics.ts` | เนื้อหา 6 หัวข้อ แยกส่วนข้อความก่อน/หลังกับ `highlightedText` เพื่อแสดง `<mark>` |
-| `pages/MiniHistory.tsx` | กรองด้วย `searchText` และ `selectedStatus`; ใช้หัวข้อสั้นแทนแสดงข้อความเดิมทั้งก้อน โหมดจริงใช้ `session.history` จาก Bot API ส่วนโหมดตัวอย่างใช้ `sampleCases` |
+| `pages/MiniHistory.tsx` | กรองด้วย `searchText` และ `selectedStatus`; แบ่งกลุ่มตามวันด้วย `dayLabel()` (วันนี้/เมื่อวาน/วันที่ ตามเวลาไทย) และแสดงประเภท (ข้อความ/ลิงก์/รูปภาพ) กับสถานะเป็นตัวหนังสือ โหมดจริงใช้ `session.history` จาก Bot API ส่วนโหมดตัวอย่างใช้ `sampleCases` |
 | `deleteFlow.ts` | ขั้นตอนปุ่มลบประวัติ (`idle` → `confirm` → `deleting` → `done`/`error`) เป็นฟังก์ชันล้วน `nextDeleteStep()` จึงทดสอบได้โดยไม่ต้องคลิก |
-| `pages/MiniDetail.tsx` | ใช้ `caseId` เลือกผลเดิม วางจุดสังเกตพร้อมไอคอน และพับเหตุผลยาวไว้ใน `<details>` |
-| `pages/MiniLessons.tsx` | อ่านหัวข้อกับเคสจาก URL แสดงตัวอย่างแชต และกลับเคสเดิมได้ |
+| `pages/MiniDetail.tsx` | ใช้ `caseId` เลือกผลเดิมจาก `sampleCases` แล้วแสดงด้วย `MiniCaseDetail` แบบเดียวกับเคสจริง |
+| `pages/MiniLessons.tsx` | อ่านหัวข้อกับเคสจาก URL แสดงการ์ด “จากเคสที่คุณเคยตรวจ” เมื่อเคสที่เปิดอยู่มี `lessonId` (backend เลือกจากคำที่พบ) และรายการหัวข้อ |
 | `pages/MiniHelp.tsx` | ขั้นตอนใช้ 3 ขั้นและ FAQ พร้อมมาสคอตชี้แนะนำ |
-| `pages/MiniSettings.tsx` | หน้าบัญชี มาสคอตกอดหัวใจ ปุ่มเลือกขนาดตัวอักษร และ (โหมดจริง) ปุ่มลบประวัติทั้งหมดที่ใช้ `deleteFlow.ts` |
+| `pages/MiniSettings.tsx` | หน้าบัญชี โปรไฟล์ LINE กับมาสคอตกอดหัวใจ เมนูข้อมูลของฉัน/ความช่วยเหลือ และ (โหมดจริง) ปุ่มลบประวัติทั้งหมดไว้ล่างสุด ใช้ `deleteFlow.ts` กดยืนยันก่อนลบ |
 | `pages/MiniChat.tsx` | ใช้เฉพาะโหมดตัวอย่าง แสดงขั้นตอนแชตและลิงก์ไปผลตัวอย่าง ไม่มีการรับข้อความหรือตรวจ AI จริง (โหมดจริงปุ่มแชตกลับไปแชต LINE แทน) |
 | `mini.css` | รูปลักษณ์และขนาดหน้าจอ ใช้ชื่อ `mini-` เพื่อจำกัดผลต่อหน้าผู้ดูแล |
 | `../App.tsx` | เพิ่ม route `/mini/chat` โดยใช้โครง `/mini` เดิม |
@@ -65,12 +67,12 @@ LINE Login เท่านั้น ดู [วิธีตั้งค่าแ
 
 | ส่วน | รับอะไร | ทำอะไร | คืนอะไร | ถ้าพังหรือข้อมูลไม่ตรง |
 |---|---|---|---|---|
-| `MiniLayout()` | เส้นทางหน้าลูก | ดูว่า URL อยู่ใต้ `/mini/result` หรือไม่ (`live`) → เรียก `useMiniSession()` → จัดหัวหน้า เมนู และ state `largeText` | หน้าร่วมที่มี `<Outlet />` ส่ง session ให้หน้าลูก | โหมดจริงพังที่ LINE/API จะแสดงการ์ด error ของ `MiniSessionNotice` แทน |
+| `MiniLayout()` | เส้นทางหน้าลูก | ดูว่า URL อยู่ใต้ `/mini/result` หรือไม่ (`live`) → เรียก `useMiniSession()` → จัดหัวหน้าและเมนู 4 ช่อง | หน้าร่วมที่มี `<Outlet />` ส่ง session ให้หน้าลูก | โหมดจริงพังที่ LINE/API จะแสดงการ์ด error ของ `MiniSessionNotice` แทน |
 | `MiniHistory()` | `session.history` (โหมดจริง) หรือ `sampleCases` (ตัวอย่าง) และค่าจากช่องค้นหา/ตัวกรอง | สร้าง `visibleCases` โดยตรวจชื่อเคส/ข้อความและสถานะ | รายการเคสที่ตรงเงื่อนไข | ไม่มีรายการ แสดงปุ่ม `clearFilters()` |
 | `MiniDetail()` | `caseId` จาก URL | หาเคสและแสดงผล เหตุผล บทเรียน และคำแนะนำ | หน้ารายละเอียดเคสเดียว | ไม่มีรหัส แสดงหน้าผลเปิดไม่ได้ |
 | `MiniLessons()` | `topic` และ `case` ใน query ของ URL | เลือก `selectedLesson` และ `sourceCase` พร้อมไฮไลต์ข้อความ | บทเรียนที่สัมพันธ์กับหัวข้อและลิงก์กลับผลเดิม | หัวข้อไม่รู้จักใช้หัวข้อแรก; รหัสเคสไม่ตรงไม่เลือกเคสอื่นแทน |
 | `MiniHelp()` | คำถามใน `questions` | แสดงวิธีใช้และคำตอบ | หน้าช่วยเหลือ | โหมดตัวอย่างปุ่มแชตไป `/mini/chat`; โหมดจริงเรียก `returnToLine()` และปุ่มปิดไว้ถ้าไม่ได้เปิดในแอป LINE |
-| `MiniSettings()` | `largeText`, `setLargeText`, `deleteHistory` จาก Outlet context | เปลี่ยนขนาดตัวอักษร (จำไว้ใน `localStorage`) และลบประวัติหลังกดยืนยัน | หน้าบัญชี | `localStorage` ใช้ไม่ได้ (เช่นโหมดส่วนตัว) ยังใช้ได้แต่โหลดใหม่กลับขนาดปกติ; ลบไม่สำเร็จแสดงข้อความ error ในการ์ด |
+| `MiniSettings()` | `profile`, `deleteHistory`, `miniHref` จาก Outlet context | แสดงโปรไฟล์และเมนู แล้วลบประวัติหลังกดยืนยัน | หน้าบัญชี | ลบไม่สำเร็จแสดงข้อความ error และกดลองใหม่ได้ |
 | `MiniMascot()` | `pose` ที่อยู่ใน `MascotPose` | อ่านรูปและคำบรรยายใน `mascotImages` | `<img>` ของท่าที่เลือก | import รูปหายทำให้ build ไม่ผ่าน; โหลดไม่ได้ยังมี `alt` |
 | `MiniPageHeading()` | `title`, `pose` | จัดหัวข้อกับรูปในรูปแบบเดียวกัน | หัวหน้าจอ | ใช้ข้อจำกัด `MascotPose` เหมือน `MiniMascot()` |
 | `MiniChatButton()` | `label` หรือข้อความเริ่มต้น | โหมดตัวอย่างสร้าง `<Link>` ไป `/mini/chat`; โหมดจริงปิดหน้าต่างกลับแชต LINE ด้วย `returnToLine()` | ปุ่มเปิดแชต | เปิดนอกแอป LINE ปุ่มจะปิดและแสดงคำแนะนำให้เปิดจากแชต |

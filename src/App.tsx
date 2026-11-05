@@ -18,6 +18,8 @@ import MiniHelp from './mini/pages/MiniHelp';
 import MiniSettings from './mini/pages/MiniSettings';
 import MiniChat from './mini/pages/MiniChat';
 import MiniLiveEntry from './mini/pages/MiniLiveEntry';
+import MiniHome from './mini/pages/MiniHome';
+import MiniRecovery from './mini/pages/MiniRecovery';
 
 function LegacyGroupDashboardRedirect() {
   const { groupId } = useParams();
@@ -28,16 +30,19 @@ function App() {
   return (
     <Routes>
       <Route path="/mini" element={<MiniLayout />}>
-        <Route index element={<MiniHistory />} />
+        <Route index element={<MiniHome />} />
         <Route path="result" element={<MiniLiveEntry />} />
         <Route path="result/history" element={<MiniHistory />} />
         <Route path="result/lessons" element={<MiniLessons />} />
         <Route path="result/settings" element={<MiniSettings />} />
         <Route path="result/help" element={<MiniHelp />} />
+        <Route path="result/recovery" element={<MiniRecovery />} />
         <Route path="result/*" element={<MiniLiveEntry />} />
+        <Route path="history" element={<MiniHistory />} />
         <Route path="cases/:caseId" element={<MiniDetail />} />
         <Route path="lessons" element={<MiniLessons />} />
         <Route path="help" element={<MiniHelp />} />
+        <Route path="recovery" element={<MiniRecovery />} />
         <Route path="settings" element={<MiniSettings />} />
         <Route path="chat" element={<MiniChat />} />
         <Route path="*" element={<MiniHelp />} />

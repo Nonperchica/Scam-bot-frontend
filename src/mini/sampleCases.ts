@@ -20,10 +20,7 @@ export interface DetectionCase {
   nextSteps: string[];
 }
 
-export interface MiniLayoutContext extends MiniSession {
-  largeText: boolean;
-  setLargeText: (value: boolean) => void;
-}
+export type MiniLayoutContext = MiniSession;
 
 export const statusLabels: Record<DetectionStatus, string> = {
   risk_found: 'พบสัญญาณเสี่ยง',
@@ -36,6 +33,15 @@ export const statusAdvice: Record<DetectionStatus, string> = {
   uncertain: 'เช็กผู้ส่งและเงื่อนไขก่อน',
   no_risk_found: 'อ่านบริบทประกอบอีกครั้ง',
 };
+
+// สัญลักษณ์กำกับสีสถานะ ให้แยกผลได้แม้มองสีไม่ออก
+export const statusSymbols: Record<DetectionStatus, string> = { risk_found: '!', uncertain: '?', no_risk_found: '✓' };
+
+// บอตบันทึกข้อความจากรูปเป็น "[รูปภาพ] <ข้อความ OCR>" (detection_history.save_detection) จึงแยกที่มาจากคำนำหน้านี้
+export function readSource(text: string): { image: boolean; text: string } {
+  const image = text.startsWith('[รูปภาพ]');
+  return { image, text: image ? text.replace(/^\[รูปภาพ\]\s*/, '') : text };
+}
 
 // ข้อมูลสมมติสำหรับช่วงทำหน้าจอ ไม่ใช่ประวัติจาก LINE หรือผล AI จริง
 export const sampleCases: DetectionCase[] = [
@@ -106,4 +112,14 @@ export function formatCaseTime(receivedAt: string): string {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(receivedAt));
+}
+
+const bangkokDay = (date: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(date);
+
+// หัวกลุ่มประวัติ: วันนี้ / เมื่อวาน / วันที่ ตามเวลาไทย
+export function dayLabel(iso: string, now = new Date()): string {
+  const day = bangkokDay(new Date(iso));
+  if (day === bangkokDay(now)) return 'วันนี้';
+  if (day === bangkokDay(new Date(now.getTime() - 86_400_000))) return 'เมื่อวาน';
+  return new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', dateStyle: 'medium' }).format(new Date(iso));
 }

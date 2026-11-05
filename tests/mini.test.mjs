@@ -129,7 +129,7 @@ function liveContext(overrides = {}) {
     history: [], historyLoading: false, historyError: '', reloadHistory: () => {},
     deleteHistory: async () => 0, canReturnToLine: false, returnToLine: () => {},
     miniHref: (page, id) => (page === 'detail' ? `/mini/result?case=${id}` : `/mini/result/${page}`),
-    largeText: false, setLargeText: () => {}, ...overrides };
+    caseId: '', ...overrides };
 }
 
 test('หน้าประวัติจริงแสดงหลายเคสและลิงก์ไปเคสของแต่ละรายการ', async () => {
@@ -239,18 +239,22 @@ test('ยกเลิกคำขอได้เมื่อเปลี่ย�
   await assert.rejects(api.fetchMiniCase(caseId, 'offline', controller.signal), error => error === aborted);
 });
 
-test('หน้าเคสจริงแสดงเหตุผลเดิมและแยกคำแนะนำ ไม่ลิงก์ไปเคสตัวอย่าง', () => {
-  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
-    React.createElement(MiniCaseDetail, { detectionCase: detail, live: true })));
-  assert.match(markup, /เหตุผลจากผลตรวจเดิม/);
-  assert.match(markup, /หัวข้อที่ควรตรวจเพิ่ม/);
-  assert.match(markup, /ไม่ใช่หลักฐานยืนยันการหลอกลวง/);
-  assert.doesNotMatch(markup, /demo-electricity|\/mini\/chat|\/mini\/lessons/);
+test('หน้าเคสแสดงเหตุผลเดิม จุดที่ควรสังเกต และคำกำกับว่าเป็นผลประเมิน ไม่ลิงก์ไปเคสตัวอย่าง', () => {
+  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(MiniCaseDetail, { detectionCase: detail, learningHref: '/mini/result/lessons?topic=otp', recoveryHref: '/mini/result/recovery' })));
+  assert.match(markup, /<h2>เหตุผล<\/h2>/);
+  assert.match(markup, /<li>เหตุผลจากผลเดิม<\/li>/);
+  assert.match(markup, /จุดที่ควรสังเกต/);
+  assert.match(markup, /ไม่ยืนยันตัวตนหรือข้อเท็จจริงของผู้ส่ง/);
+  assert.match(markup, /กลับไปแชต LINE/);
+  // render นอก Outlet ปุ่มแชตจึงเป็นแบบตัวอย่าง (/mini/chat); หน้าจริงใช้ปุ่มปิดหน้าต่างกลับ LINE
+  assert.doesNotMatch(markup, /demo-electricity|HIGH|MEDIUM|LOW|100%/);
+  // หน้าเผลอทำตามยังเป็นร่าง จึงยังไม่มีลิงก์
+  assert.doesNotMatch(markup, /เผลอทำตาม|recovery/);
 });
 
 test('ข้อความที่ตรวจแสดงเป็นตัวอักษร ไม่ทำงานเป็น HTML', () => {
   const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
-    React.createElement(MiniCaseDetail, { detectionCase: { ...detail, message: '<script>alert(1)</script>' }, live: true })));
+    React.createElement(MiniCaseDetail, { detectionCase: { ...detail, message: '<script>alert(1)</script>' }, learningHref: '/mini/result/lessons?topic=otp', recoveryHref: '/mini/result/recovery' })));
   assert.match(markup, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.doesNotMatch(markup, /<script>alert/);
 });
@@ -259,53 +263,94 @@ function renderPage(path) {
   return renderToStaticMarkup(React.createElement(MemoryRouter, { initialEntries: [path] }, React.createElement(App)));
 }
 
-test('หน้าแรกจริงยังใช้ดีไซน์มาสคอตทักทายและครุ่นคิด แม้กำลังเชื่อม LINE', () => {
+test('เปิดจากเมนูโดยไม่มีรหัสเคสได้หน้าแรก มีปุ่มตรวจใน LINE วิธีใช้ และเมนู 4 ช่อง', () => {
   const markup = renderPage('/mini/result');
-  assert.match(markup, /mini-brand-banner/);
-  assert.match(markup, /wave\.png/);
-  assert.match(markup, /think\.png/);
-  assert.match(markup, /mini-invite/);
-  assert.match(markup, /ประวัติการตรวจ/);
-  assert.match(markup, /mini-navigation/);
+  assert.match(markup, /ให้เราช่วย/);
+  assert.match(markup, /calm\.png/);
+  assert.match(markup, /ตรวจข้อความใน LINE/);
+  assert.match(markup, /วิธีใช้งานง่าย ๆ 3 ขั้นตอน/);
+  for (const label of ['หน้าแรก', 'ประวัติ', 'เรียนรู้', 'บัญชี']) assert.match(markup, new RegExp(`</svg>${label}</a>`));
   assert.match(markup, /href="\/mini\/result\/history"/);
-  assert.doesNotMatch(markup, /demo-electricity|บัญชีตัวอย่าง/);
+  assert.doesNotMatch(markup, /demo-electricity|บัญชีตัวอย่าง|ตรวจสิทธิ์คืนเงิน/);
+});
+
+test('หน้าแรกแสดงผลตรวจล่าสุดจริงและพาไปเคสนั้น โหลดไม่ได้ไม่แสดงเคสสมมติ', async () => {
+  const MiniHome = (await server.ssrLoadModule('/src/mini/pages/MiniHome.tsx')).default;
+  const latest = renderWithContext(MiniHome, liveContext({ history: [{ ...historyItem, title: '[รูปภาพ] ส่ง OTP' }] }));
+  assert.match(latest, new RegExp(`href="/mini/result\\?case=${caseId}"`));
+  assert.match(latest, /พบสัญญาณเสี่ยง/);
+  assert.match(latest, /รูปภาพ: ส่ง OTP/);
+  assert.match(latest, /ดูประวัติทั้งหมด/);
+  const failed = renderWithContext(MiniHome, liveContext({ historyError: 'ระบบยังโหลดประวัติไม่ได้' }));
+  assert.match(failed, /role="alert"[^>]*>ระบบยังโหลดประวัติไม่ได้/);
+  assert.doesNotMatch(failed, /ตรวจสิทธิ์คืนเงิน|demo-/);
 });
 
 test('หน้าจริงทุกหน้าคงเมนูและมาสคอตตามแบบล่าสุด พร้อมพารหัสเคสไปต่อ', () => {
-  for (const [path, pose] of [['/mini/result/history', 'wave'], ['/mini/result/lessons', 'book'],
-    ['/mini/result/help', 'guide'], ['/mini/result/settings', 'heart'], ['/mini/result', 'inspect']]) {
+  for (const [path, pose] of [['/mini/result/history', 'inspect'], ['/mini/result/lessons', 'book'],
+    ['/mini/result/help', 'guide'], ['/mini/result/settings', 'calm'], ['/mini/result', 'inspect']]) {
     const markup = renderPage(`${path}?case=${caseId}`);
     assert.match(markup, new RegExp(`${pose}\\.png`));
     assert.match(markup, /mini-navigation/);
     assert.match(markup, new RegExp(`/mini/result/history\\?case=${caseId}`));
+    // แท็บหน้าแรกไม่พารหัสเคส จึงเปิดหน้าแรกได้จริง
+    assert.match(markup, /href="\/mini\/result"/);
     assert.doesNotMatch(markup, /href="\/mini\/chat"|href="\/mini\/settings"|href="\/mini\/help"|บัญชีตัวอย่าง/);
   }
 });
 
-test('ผลเสี่ยงแสดงคำแนะนำทุกข้อทันที ไม่พับไว้', () => {
-  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
-    React.createElement(MiniCaseDetail, { detectionCase: detail, live: true })));
-  assert.match(markup, /<ol class="mini-steps"><li>อย่าส่งรหัส<\/li><li>ตรวจผ่านช่องทางทางการ<\/li><\/ol>/);
-  assert.doesNotMatch(markup, /ดูคำแนะนำเพิ่มเติม/);
+test('คำแนะนำแสดงครบทุกข้อทุกสถานะ ไม่พับไว้', () => {
+  for (const status of ['risk_found', 'uncertain', 'no_risk_found']) {
+    const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(MiniCaseDetail, { detectionCase: { ...detail, status }, learningHref: '/mini/result/lessons?topic=otp', recoveryHref: '/mini/result/recovery' })));
+    assert.match(markup, /<ol class="mini-steps"><li>อย่าส่งรหัส<\/li><li>ตรวจผ่านช่องทางทางการ<\/li><\/ol>/);
+    assert.doesNotMatch(markup, /ดูคำแนะนำเพิ่มเติม/);
+  }
 });
 
-test('ผลอื่นยังพับคำแนะนำเพิ่มเติมไว้', () => {
-  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
-    React.createElement(MiniCaseDetail, { detectionCase: { ...detail, status: 'uncertain' }, live: true })));
-  assert.match(markup, /ดูคำแนะนำเพิ่มเติม/);
+test('แถบผลตรวจมีสัญลักษณ์กำกับสีครบสามสถานะ และแยกข้อความจากรูปภาพ', () => {
+  for (const [status, label, symbol] of [['risk_found', 'พบสัญญาณเสี่ยง', '!'], ['uncertain', 'ควรตรวจสอบเพิ่มเติม', '?'], ['no_risk_found', 'ยังไม่พบสัญญาณเสี่ยง', '✓']]) {
+    const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(MiniCaseDetail, { detectionCase: { ...detail, status }, learningHref: '/mini/result/lessons?topic=otp', recoveryHref: '/mini/result/recovery' })));
+    assert.match(markup, new RegExp(`mini-result-badge" aria-hidden="true">\\${symbol}`));
+    assert.match(markup.replace(/<[^>]*>/g, ''), new RegExp(label));
+  }
+  const text = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(MiniCaseDetail, { detectionCase: detail, learningHref: '/mini/result/lessons?topic=otp', recoveryHref: '/mini/result/recovery' })));
+  assert.match(text, /ผลตรวจข้อความ</);
+  const image = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(MiniCaseDetail, { detectionCase: { ...detail, message: '[รูปภาพ] โอนเงินด่วน' }, learningHref: '/mini/result/lessons?topic=otp', recoveryHref: '/mini/result/recovery' })));
+  assert.match(image, /ผลตรวจข้อความจากรูปภาพ/);
+  assert.match(image, /ข้อความที่อ่านได้จากรูป/);
+  assert.match(image, /<blockquote>โอนเงินด่วน<\/blockquote>/);
+  assert.doesNotMatch(image, /\[รูปภาพ\]/);
 });
 
 test('หน้าประวัติที่มีเคสไม่เกินหนึ่งรายการไม่แสดงช่องค้นหาและตัวกรอง', () => {
-  const markup = renderPage('/mini/result');
-  assert.doesNotMatch(markup, /mini-search-disclosure|mini-filters/);
-  const demoMarkup = renderPage('/mini');
-  assert.match(demoMarkup, /mini-search-disclosure/);
+  const markup = renderPage('/mini/result/history');
+  assert.doesNotMatch(markup, /mini-search|mini-filters/);
+  const demoMarkup = renderPage('/mini/history');
+  assert.match(demoMarkup, /class="mini-search"/);
   assert.match(demoMarkup, /mini-filters/);
 });
 
-test('หัวหน้าจอซ่อนปุ่มย้อนกลับเมื่ออยู่หน้าประวัติ', () => {
-  assert.doesNotMatch(renderPage('/mini'), /aria-label="กลับหน้าหลัก"/);
-  assert.match(renderPage('/mini/lessons'), /aria-label="กลับหน้าหลัก"/);
+test('ประวัติแบ่งตามวัน และมีประเภทกับสถานะเป็นข้อความ', async () => {
+  const module = await server.ssrLoadModule('/src/mini/pages/MiniHistory.tsx');
+  const { dayLabel } = await server.ssrLoadModule('/src/mini/sampleCases.ts');
+  const now = new Date('2026-11-05T05:00:00Z');
+  assert.equal(dayLabel('2026-11-05T01:00:00Z', now), 'วันนี้');
+  assert.equal(dayLabel('2026-11-04T10:00:00Z', now), 'เมื่อวาน');
+  // 16:30 UTC = 23:30 ของวันที่ 3 ตามเวลาไทย จึงไม่ใช่เมื่อวาน
+  assert.doesNotMatch(dayLabel('2026-11-03T16:30:00Z', now), /วันนี้|เมื่อวาน/);
+  const items = [{ ...historyItem, title: '[รูปภาพ] ประกาศรับสมัครงาน' }, { ...historyItem, id: 'b'.repeat(32), category: 'link', status: 'no_risk_found' }];
+  const markup = renderWithContext(module.default, liveContext({ history: items }));
+  assert.match(markup, /รูปภาพ · /);
+  assert.match(markup, /ลิงก์ · /);
+  assert.match(markup, />ประกาศรับสมัครงาน</);
+  assert.match(markup, /mini-status-label risk_found">พบสัญญาณเสี่ยง/);
+  assert.match(markup, /mini-status-dot no_risk_found" aria-hidden="true">✓/);
+});
+
+test('หัวหน้าจอซ่อนปุ่มย้อนกลับในหน้าหลักของแต่ละแท็บ', () => {
+  for (const path of ['/mini', '/mini/history', '/mini/lessons', '/mini/settings']) assert.doesNotMatch(renderPage(path), /aria-label="กลับหน้าหลัก"/);
+  assert.match(renderPage('/mini/help'), /aria-label="กลับหน้าหลัก"/);
+  assert.match(renderPage('/mini/cases/demo-electricity'), /aria-label="กลับหน้าหลัก"/);
 });
 
 test('คำถามที่พบบ่อยไม่มีคำว่าหน้าตัวอย่าง และบอกว่าส่งรูปได้', () => {
@@ -367,15 +412,58 @@ test('หน้าบัญชีแสดงชื่อและรูปจ�
     profile: { displayName: 'มิกกี้', pictureUrl: 'https://profile.line-scdn.net/abc' } }));
   assert.match(markup, /มิกกี้/);
   assert.match(markup, /src="https:\/\/profile\.line-scdn\.net\/abc"/);
-  assert.match(markup, /heart\.png/);
+  assert.match(markup, /calm\.png/);
   assert.match(renderWithContext(MiniSettings, liveContext({ signedIn: true })), /เพื่อนของ Eh\?Bot/);
   // ปุ่มลบอยู่หลังเนื้อหาอื่นทั้งหมด
   assert.ok(markup.indexOf('ลบประวัติทั้งหมด') > markup.indexOf('เกี่ยวกับ Eh?Bot'));
 });
 
-test('หน้าเคสแสดงคำแนะนำก่อนข้อความ และมีคำเตือนจุดเดียว', () => {
-  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
-    React.createElement(MiniCaseDetail, { detectionCase: detail, live: true })));
-  assert.ok(markup.indexOf('แนะนำให้ทำ') < markup.indexOf('ข้อความที่ตรวจ'));
+test('หน้าเคสเรียงตามการ์ด LINE: ผลตรวจ → ข้อความ → เหตุผล → คำเตือน และมีคำกำกับจุดเดียว', () => {
+  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(MiniCaseDetail, { detectionCase: detail, learningHref: '/mini/result/lessons?topic=otp', recoveryHref: '/mini/result/recovery' })));
+  const order = ['mini-result-banner', 'ข้อความที่พบ', '<h2>เหตุผล</h2>', 'ควรทำอย่างไร'].map(text => markup.indexOf(text));
+  assert.ok(order.every(index => index >= 0));
+  assert.deepEqual(order, [...order].sort((x, y) => x - y));
+  assert.match(markup, /mini-advice mini-warn/);
   assert.equal(markup.match(/ไม่ใช่การตรวจซ้ำ/g).length, 1);
+  const calm = renderToStaticMarkup(React.createElement(MemoryRouter, null, React.createElement(MiniCaseDetail, { detectionCase: { ...detail, status: 'no_risk_found' }, learningHref: '/mini/result/lessons?topic=otp', recoveryHref: '/mini/result/recovery' })));
+  assert.match(calm, /mini-advice mini-mint/);
+  assert.match(calm, /ควรทำอย่างไร/);
+});
+
+test('หน้าบัญชีไม่มีปุ่มขนาดตัวอักษร และลบประวัติยังต้องกดยืนยัน', async () => {
+  const MiniSettings = (await server.ssrLoadModule('/src/mini/pages/MiniSettings.tsx')).default;
+  const markup = renderWithContext(MiniSettings, liveContext({ signedIn: true }));
+  assert.doesNotMatch(markup, /ขนาดตัวอักษร|ขนาดใหญ่/);
+  assert.match(markup, /ความเป็นส่วนตัว/);
+  assert.match(markup, /วิธีใช้งาน Eh\?Bot/);
+  assert.match(markup, /เชื่อมต่อด้วย LINE/);
+  assert.doesNotMatch(markup, /ยืนยันลบ/);
+});
+
+test('หน้าเรียนรู้เริ่มจากรายการหัวข้อ เปิดเนื้อหาเฉพาะ topic และไม่แสดงแบบฝึก', () => {
+  const catalog = renderPage('/mini/lessons');
+  assert.match(catalog, /อ่านบทเรียน/);
+  assert.doesNotMatch(catalog, /mini-example-scene|ลองตอบ|จากเคสที่คุณเคยตรวจ/);
+  const article = renderPage('/mini/lessons?topic=otp');
+  assert.match(article, /mini-example-scene/);
+  assert.match(article, /หัวข้อทั้งหมด/);
+  assert.match(article, /เก็บ OTP ไว้กับตัวเอง/);
+});
+
+test('ฟีเจอร์ช่วยเหลือที่ยังไม่พร้อมไม่แสดงลิงก์ในผลตรวจหรือบัญชี', () => {
+  const account = renderPage('/mini/settings');
+  assert.doesNotMatch(account, /href="[^"]*recovery"|ลองตอบ/);
+  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
+    React.createElement(MiniCaseDetail, { detectionCase: detail, learningHref: '/mini/result/lessons?topic=otp', recoveryHref: '/mini/result/recovery' })));
+  assert.doesNotMatch(markup, /href="[^"]*recovery"/);
+});
+
+test('เคสเปิดไม่ได้พาไปประวัติของตนเอง โดยไม่พารหัสเคสนั้นไปด้วย', () => {
+  const session = { loading: false, error: 'ไม่พบผลตรวจนี้', needsLogin: false, retry: () => {}, caseId };
+  const markup = renderToStaticMarkup(React.createElement(MemoryRouter, null,
+    React.createElement(Routes, null,
+      React.createElement(Route, { element: React.createElement(Outlet, { context: session }) },
+        React.createElement(Route, { index: true, element: React.createElement(MiniSessionNotice) })))));
+  assert.match(markup, /href="\/mini\/result\/history"[^>]*>ไปประวัติของฉัน/);
+  assert.doesNotMatch(markup, new RegExp(caseId));
 });
