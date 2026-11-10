@@ -2,6 +2,8 @@
 # Senior Guard — FastAPI Backend
 # =============================================
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -30,14 +32,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — อนุญาต Frontend (Vite default port)
+allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+]
+# เพิ่มเฉพาะโดเมนที่ระบุ ไม่เปิด wildcard เพราะ API ใช้ข้อมูลผู้ดูแล
+for configured_origin in os.getenv("DASHBOARD_WEB_ORIGINS", "").split(","):
+    origin = configured_origin.strip().rstrip("/")
+    if origin and origin != "*" and origin not in allowed_origins:
+        allowed_origins.append(origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
