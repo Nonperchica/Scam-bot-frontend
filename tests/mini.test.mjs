@@ -274,6 +274,21 @@ test('เปิดจากเมนูโดยไม่มีรหัสเ�
   assert.doesNotMatch(markup, /demo-electricity|บัญชีตัวอย่าง|ตรวจสิทธิ์คืนเงิน/);
 });
 
+// ใช้ useMiniSession จริงขณะที่ยังไม่มีบัญชี LINE ที่ login: ประวัติยังไม่ถูกโหลด จึงห้ามขึ้น "กำลังโหลด" ค้าง
+test('ยังไม่ได้ login ไม่แสดงข้อความกำลังโหลดประวัติค้าง', () => {
+  const home = renderPage('/mini/result');
+  assert.doesNotMatch(home, /กำลังโหลดผลตรวจล่าสุด/);
+  const history = renderPage('/mini/result/history');
+  assert.doesNotMatch(history, /กำลังโหลดประวัติ/);
+});
+
+// เปิด LINE ไม่สำเร็จ = ยังไม่รู้ว่ามีประวัติไหม จึงห้ามบอกว่า "ยังไม่มีผลตรวจ"
+test('เปิด LINE ไม่สำเร็จ หน้าแรกไม่อ้างว่ายังไม่มีผลตรวจ', async () => {
+  const MiniHome = (await server.ssrLoadModule('/src/mini/pages/MiniHome.tsx')).default;
+  const markup = renderWithContext(MiniHome, liveContext({ error: 'ยังเปิดระบบ LINE ไม่สำเร็จ' }));
+  assert.doesNotMatch(markup, /ยังไม่มีผลตรวจ/);
+});
+
 test('หน้าแรกแสดงผลตรวจล่าสุดจริงและพาไปเคสนั้น โหลดไม่ได้ไม่แสดงเคสสมมติ', async () => {
   const MiniHome = (await server.ssrLoadModule('/src/mini/pages/MiniHome.tsx')).default;
   const latest = renderWithContext(MiniHome, liveContext({ history: [{ ...historyItem, title: '[รูปภาพ] ส่ง OTP' }] }));
