@@ -1,7 +1,6 @@
 # Live dashboard
 
 History views use existing `detection_logs` and `line_sources` tables without a migration.
-Do not run the old `supabase_schema.sql`: it describes the earlier demo schema.
 The LINE bot remains a separate service. Dataset approvals and skips write review data;
 see `DATASET_SETUP.md` for their database setup.
 
