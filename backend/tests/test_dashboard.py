@@ -28,6 +28,15 @@ class DashboardTests(unittest.TestCase):
         with patch.dict(os.environ, {"DASHBOARD_API_TOKEN": ""}):
             self.assertEqual(client.get("/api/auth/session").status_code, 503)
 
+    # header ที่มีอักขระนอก ASCII ต้องได้ 401 เหมือนรหัสผิด ไม่ใช่ server error 500
+    def test_non_ascii_authorization_is_rejected_as_401(self):
+        client = TestClient(app, raise_server_exceptions=False)
+        with patch.dict(os.environ, {"DASHBOARD_API_TOKEN": "test-secret"}):
+            for value in ("Bearer é".encode("utf-8"), "Bearer test-secreté".encode("utf-8")):
+                with self.subTest(value=value):
+                    result = client.get("/api/auth/session", headers={"Authorization": value})
+                    self.assertEqual(result.status_code, 401)
+
     def test_bangkok_boundary_and_status_semantics(self):
         rows = [row("1", "risk_found", True, risk_level="high"),
                 row("2", "uncertain", False, risk_level="medium"),

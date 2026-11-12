@@ -37,6 +37,18 @@ class DatasetTests(unittest.TestCase):
         read_env.assert_not_called()
         client.assert_not_called()
 
+    # คำแนะนำ AI ใช้กติกาเดียวกับ embedding: ไม่มีคีย์ตอบ 503 ไม่ไปอ่าน .env ของบอตข้ามโปรเจกต์
+    def test_suggest_label_without_key_does_not_read_bot_env_or_call_gemini(self):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": ""}), \
+             patch('dotenv.dotenv_values') as read_env, \
+             patch('google.genai.Client') as client:
+            with self.assertRaises(dataset.HTTPException) as error:
+                dataset.suggest_label('synthetic test message')
+        self.assertEqual(error.exception.status_code, 503)
+        self.assertIn('GEMINI_API_KEY', error.exception.detail)
+        read_env.assert_not_called()
+        client.assert_not_called()
+
     def test_embedding_uses_configured_key_and_returns_vector(self):
         vector = [0.1] * 768
         with patch.dict(os.environ, {"GEMINI_API_KEY": "offline-test-key"}), \
