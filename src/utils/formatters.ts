@@ -45,22 +45,6 @@ export function getRiskLabel(level: RiskLevel): string {
 }
 
 /**
- * คืนค่า label ภาษาไทยสำหรับหมวดหมู่สแกม
- */
-export function getCategoryLabel(category: string): string {
-  const map: Record<string, string> = {
-    phishing: 'ฟิชชิง',
-    investment_scam: 'หลอกลงทุน',
-    romance_scam: 'หลอกรัก',
-    lottery_scam: 'หลอกถูกรางวัล',
-    impersonation: 'แอบอ้าง',
-    loan_scam: 'หลอกกู้เงิน',
-    other: 'อื่นๆ',
-  };
-  return map[category] || category;
-}
-
-/**
  * ตัดข้อความยาวเกินไป
  */
 export function truncateText(text: string, maxLength: number = 80): string {
