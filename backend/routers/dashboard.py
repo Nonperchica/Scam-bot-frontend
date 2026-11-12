@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 def authorize(authorization: str = Header(default="")):
     token = os.getenv("DASHBOARD_API_TOKEN", "")
     if token:
-        if not secrets.compare_digest(authorization, f"Bearer {token}"):
+        # เทียบเป็น bytes: compare_digest รับ str ได้เฉพาะ ASCII ถ้า header มีอักขระอื่นจะ error เป็น 500
+        if not secrets.compare_digest(authorization.encode(), f"Bearer {token}".encode()):
             raise HTTPException(401, "กรุณาใส่รหัสเข้า Dashboard")
     else:
         raise HTTPException(503, "ต้องตั้งค่า DASHBOARD_API_TOKEN ใน Backend ก่อนใช้งาน")

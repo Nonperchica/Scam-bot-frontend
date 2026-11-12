@@ -139,10 +139,8 @@ def suggest_label(text):
     """AI advice only: never write its label to the dataset."""
     from google import genai
     from google.genai import types
+    # ใช้คีย์ของ Dashboard API เท่านั้น เหมือน embedding(); ไม่อ่าน .env ของบอตข้ามโปรเจกต์
     key = os.getenv("GEMINI_API_KEY")
-    if not key:
-        bot_env = Path(__file__).resolve().parents[3] / "scam-bot-backend" / "scam-bot-backend" / ".env"
-        key = dotenv_values(bot_env).get("GEMINI_API_KEY")
     if not key:
         raise HTTPException(503, "ต้องตั้ง GEMINI_API_KEY ใน backend/.env")
     instruction = (

@@ -167,8 +167,8 @@ export default function GroupDashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={summary?.trends ?? []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
-                <XAxis dataKey="date" stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#8a9a8c" fontSize={11} tickLine={false} axisLine={false} />
+                <XAxis dataKey="date" stroke="#75697c" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#75697c" fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Legend />
                 <Line
