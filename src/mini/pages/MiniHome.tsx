@@ -44,7 +44,7 @@ export default function MiniHome() {
           </Link>
           <Link className="mini-text-link" to={session.miniHref('history')}>ดูประวัติทั้งหมด<ChevronRight aria-hidden="true" /></Link>
         </>}
-        {!latest && !session.historyLoading && !session.historyError && !session.needsLogin && !session.loading
+        {!latest && !session.historyLoading && !session.historyError && !session.needsLogin && !session.loading && !session.error
           && <p className="mini-secondary">ยังไม่มีผลตรวจ ลองส่งข้อความที่สงสัยในแชตดูนะ</p>}
       </section>
 

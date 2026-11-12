@@ -145,7 +145,8 @@ export function useMiniSession(live: boolean, caseId: string) {
   return { live, caseId, loading: live && view.loading, detail: live ? view.detail : undefined,
     error: live ? view.error : undefined, needsLogin: live && view.login,
     signedIn: Boolean(view.liff?.isLoggedIn()), retry, login, canReturnToLine, returnToLine, miniHref,
-    history: live ? history.items : [], historyLoading: live && history.loading,
+    // โหลดประวัติเฉพาะเมื่อ login แล้ว (effect ด้านบน); ยังไม่ login หรือเปิด LINE ไม่ได้ จึงไม่ถือว่ากำลังโหลด
+    history: live ? history.items : [], historyLoading: live && Boolean(signedInLiff) && history.loading,
     historyError: live ? history.error : '', reloadHistory, deleteHistory,
     profile: live ? profile : undefined };
 }
