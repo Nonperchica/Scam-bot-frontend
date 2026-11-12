@@ -96,8 +96,8 @@ export default function Overview() {
             {stats && stats.totalScanned > 0 ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={stats.trends} margin={{ top: 14, right: 10, left: -22, bottom: 0 }}>
               <defs><linearGradient id="eh-mint-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#35c8a1" stopOpacity={0.22} /><stop offset="100%" stopColor="#35c8a1" stopOpacity={0.01} /></linearGradient><linearGradient id="eh-pink-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ef367f" stopOpacity={0.13} /><stop offset="100%" stopColor="#ef367f" stopOpacity={0.01} /></linearGradient></defs>
               <CartesianGrid strokeDasharray="3 5" stroke="#eee9ef" vertical={false} />
-              <XAxis dataKey="date" tick={{ fill: '#7f7584', fontSize: 11 }} tickLine={false} axisLine={false} tickMargin={12} />
-              <YAxis allowDecimals={false} tick={{ fill: '#7f7584', fontSize: 11 }} tickLine={false} axisLine={false} />
+              <XAxis dataKey="date" tick={{ fill: '#75697c', fontSize: 11 }} tickLine={false} axisLine={false} tickMargin={12} />
+              <YAxis allowDecimals={false} tick={{ fill: '#75697c', fontSize: 11 }} tickLine={false} axisLine={false} />
               <Tooltip contentStyle={tooltipStyle} />
               {series.total && <Area type="monotone" dataKey="totalMessages" name="ข้อความทั้งหมด" stroke="#29ad8f" strokeWidth={2.5} fill="url(#eh-mint-fill)" isAnimationActive={false} />}
               {series.risk && <Area type="monotone" dataKey="suspiciousMessages" name="พบความเสี่ยง" stroke="#ef367f" strokeWidth={2.5} fill="url(#eh-pink-fill)" isAnimationActive={false} />}
