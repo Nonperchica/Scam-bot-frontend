@@ -20,7 +20,7 @@
 | `pages/MiniLiveEntry.tsx` | URL ไม่มี case (เปิดจากเมนู LINE) → หน้าแรก `MiniHome`; มี case (ปุ่มดูรายละเอียด) → รายละเอียดของเคสนั้น | เปิด LIFF เปล่า ๆ ได้โดยไม่ขึ้นว่ารหัสเคสผิด |
 | `pages/MiniLiveDetail.tsx` | อ่าน session จาก Outlet → แสดงผลเดิมหรือการ์ดสถานะในดีไซน์เดียวกัน | มีมาสคอตและเมนูครบแม้กำลังโหลดหรือเปิดไม่ได้ |
 | `components/MiniSessionNotice.tsx` | loading/login/error → การ์ดมาสคอต guide/inspect และปุ่มที่ตรงสถานะ | ข้อความ error แสดงทันทีด้วย role=alert พร้อมปุ่มลองอีกครั้ง |
-| `components/MiniCaseDetail.tsx` | รับ `detectionCase`, `learningHref`, `recoveryHref` → เรียงผลตรวจ (มาสคอต + สัญลักษณ์ ! ? ✓) → ข้อความที่พบ (แยกข้อความจากรูปด้วยคำนำหน้า `[รูปภาพ]`) → เหตุผล → คำเตือน/ควรทำอย่างไร → JSX | รับเฉพาะข้อมูลที่ผ่านการตรวจรูปแบบแล้ว ไม่ render HTML จากข้อความ |
+| `components/MiniCaseDetail.tsx` | รับ `detectionCase`, `learningHref` → เรียงผลตรวจ (มาสคอต + สัญลักษณ์ ! ? ✓) → ข้อความที่พบ (แยกข้อความจากรูปด้วยคำนำหน้า `[รูปภาพ]`) → เหตุผล → คำเตือน/ควรทำอย่างไร → JSX | รับเฉพาะข้อมูลที่ผ่านการตรวจรูปแบบแล้ว ไม่ render HTML จากข้อความ |
 | `pages/MiniDetail.tsx` | caseId ของตัวอย่าง → find ใน `sampleCases` → ใช้การ์ดร่วมกัน | ไม่พบไม่แทนด้วยเคสแรก |
 | `MiniLayout.tsx` | หัวหน้าและเมนูร่วมดีไซน์ 8 ท่า → แยกเส้นทางจริงไว้ใต้ `/mini/result` | เมนูส่งต่อรหัสเคสและไม่พาไปข้อมูลตัวอย่าง |
 | `App.tsx` | เพิ่ม `/mini/result` นอกระบบรหัส Dashboard | หน้า Mini App ใช้ LINE Login แยกจากผู้ดูแล |

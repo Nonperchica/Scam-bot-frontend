@@ -13,7 +13,7 @@ export default function MiniLayout() {
   // หน้าแรก (และหน้าผลตรวจที่เปิดจากแชต) อยู่ใต้แท็บหน้าแรก ตามแบบ mockup
   const isHomeTab = live ? pathname === '/mini/result' : pathname === '/mini' || pathname.startsWith('/mini/cases/') || pathname === '/mini/chat';
   const isHistoryPage = pathname.endsWith('/history');
-  const isAccountPage = pathname.endsWith('/settings') || pathname.endsWith('/help') || pathname.endsWith('/recovery');
+  const isAccountPage = pathname.endsWith('/settings') || pathname.endsWith('/help');
   const isLessonsPage = pathname.endsWith('/lessons');
   const isDetailPage = live ? pathname === '/mini/result' && Boolean(caseId) : pathname.startsWith('/mini/cases/');
   // หน้าหลักของแต่ละแท็บไม่ต้องมีปุ่มย้อนกลับ
@@ -38,7 +38,7 @@ export default function MiniLayout() {
       <div className="mini-shell">
         <header className="mini-header">
           {showBack
-            ? <Link to={miniHref(pathname.endsWith('/help') || pathname.endsWith('/recovery') ? 'settings' : 'history')} className="mini-icon-button" aria-label="กลับหน้าหลัก"><ChevronLeft aria-hidden="true" /></Link>
+            ? <Link to={miniHref(pathname.endsWith('/help') ? 'settings' : 'history')} className="mini-icon-button" aria-label="กลับหน้าหลัก"><ChevronLeft aria-hidden="true" /></Link>
             : null}
           {isDetailPage ? <span className="mini-header-title">รายละเอียดผลตรวจ</span>
             : <Link to={miniHref('home')} className="mini-header-brand">Eh<span>?</span>Bot</Link>}

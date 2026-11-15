@@ -13,6 +13,6 @@ export default function MiniDetail() {
       <Link to="/mini/history" className="mini-primary-button">ไปหน้าประวัติ</Link>
     </section></div>;
   }
-  return <MiniCaseDetail detectionCase={detectionCase} recoveryHref="/mini/recovery"
+  return <MiniCaseDetail detectionCase={detectionCase}
     learningHref={`/mini/lessons?topic=${detectionCase.lessonId}&case=${detectionCase.id}`} />;
 }

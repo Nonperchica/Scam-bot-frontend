@@ -25,7 +25,7 @@ export default function MiniHome() {
         <h1>สวัสดี<br />ให้เราช่วย<br />เช็กนะ</h1>
         <MiniMascot pose="calm" />
       </section>
-      <p className="mini-home-lead">สงสัยข้อความไหน ส่งให้บอตช่วยดู</p>
+      <p className="mini-home-lead">สงสัยข้อความไหน ส่งให้ Eh?Bot ช่วยดู</p>
       <MiniChatButton label="ตรวจข้อความใน LINE" />
       {session.live && <MiniSessionNotice />}
 

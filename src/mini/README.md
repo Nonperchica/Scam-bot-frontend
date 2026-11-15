@@ -15,7 +15,6 @@ LINE Login เท่านั้น ดู [วิธีตั้งค่าแ
 |---|---|
 | `MiniLayout.tsx` | หัวหน้า และเมนู 4 ช่อง หน้าแรก/ประวัติ/เรียนรู้/บัญชี ส่ง session ให้ทุกหน้า (เอาปุ่มขนาดตัวอักษรออกแล้ว ใช้การขยายตัวอักษรของเครื่องแทน เพราะ CSS ใช้หน่วย `rem`) |
 | `pages/MiniHome.tsx` | หน้าแรก: ทักทาย ปุ่มตรวจข้อความใน LINE ผลตรวจล่าสุดจาก `session.history[0]` และวิธีใช้ 3 ขั้น โหลดไม่ได้แสดง error ไม่แสดงเคสสมมติแทน |
-| `pages/MiniRecovery.tsx` | หน้า “เผลอทำตามไปแล้ว?” เป็นร่าง ลิงก์ปิดไว้ด้วย `RECOVERY_READY = false` จนกว่าจะตรวจเนื้อหา |
 | `components/MiniMascot.tsx` | จับคู่ `pose` กับรูปและคำบรรยายภาพใน `mascotImages` |
 | `components/MiniPageHeading.tsx` | รับ `title` กับ `pose` เพื่อวางหัวข้อและมาสคอตแบบเดียวกัน |
 | `components/MiniChatButton.tsx` | ปุ่มร่วมเปิด `/mini/chat` ซึ่งยังเป็นแชตตัวอย่าง |

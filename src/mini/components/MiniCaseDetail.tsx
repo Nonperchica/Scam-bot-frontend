@@ -6,7 +6,6 @@ import type { MiniCaseData } from '../services/miniApi';
 import type { MascotPose } from './MiniMascot';
 import MiniMascot from './MiniMascot';
 import MiniChatButton from './MiniChatButton';
-import { RECOVERY_READY } from '../pages/MiniRecovery';
 import warningImage from '../assets/warning.png';
 
 const statusMascots: Record<DetectionStatus, MascotPose> = { risk_found: 'alert', no_risk_found: 'calm', uncertain: 'inspect' };
@@ -19,7 +18,7 @@ function reasonItems(reason: string): string[] {
 }
 
 // เรียงตามการ์ด LINE: ผลตรวจ → ข้อความที่พบ → เหตุผล → คำเตือน/สิ่งที่ควรทำ
-export default function MiniCaseDetail({ detectionCase, recoveryHref, learningHref }: { detectionCase: MiniCaseData; recoveryHref: string; learningHref: string }) {
+export default function MiniCaseDetail({ detectionCase, learningHref }: { detectionCase: MiniCaseData; learningHref: string }) {
   const isRisk = detectionCase.status === 'risk_found';
   const source = readSource(detectionCase.message);
   return (
@@ -65,7 +64,6 @@ export default function MiniCaseDetail({ detectionCase, recoveryHref, learningHr
 
       <p className="mini-note"><Info aria-hidden="true" /><span>เป็นผลประเมิน ไม่ยืนยันตัวตนหรือข้อเท็จจริงของผู้ส่ง จุดที่ควรสังเกตเลือกจากคำที่พบ ไม่ใช่หลักฐานยืนยันการหลอกลวง และไม่ใช่การตรวจซ้ำ</span></p>
       <Link to={learningHref} className="mini-learning-link"><BookOpen aria-hidden="true" /><span>เรียนรู้จากเคสนี้</span><ChevronRight aria-hidden="true" /></Link>
-      {RECOVERY_READY && <Link to={recoveryHref} className="mini-text-link">เผลอทำตามไปแล้ว?<ChevronRight aria-hidden="true" /></Link>}
       <MiniChatButton label="กลับไปแชต LINE" />
     </div>
   );

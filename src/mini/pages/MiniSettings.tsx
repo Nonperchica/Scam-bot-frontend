@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { BookOpen, ChevronRight, CircleCheck, CircleHelp, History, Info, ShieldCheck, Trash2, UserRound } from 'lucide-react';
+import { BookOpen, ChevronRight, CircleCheck, History, Info, ShieldCheck, Trash2, UserRound } from 'lucide-react';
 import type { MiniLayoutContext } from '../sampleCases';
 import MiniMascot from '../components/MiniMascot';
-import { RECOVERY_READY } from './MiniRecovery';
 import { deleteMessage, nextDeleteStep } from '../deleteFlow';
 import type { DeleteAction, DeleteState } from '../deleteFlow';
 
@@ -48,7 +47,6 @@ export default function MiniSettings() {
       <h2 className="mini-topic-heading">ความช่วยเหลือ</h2>
       <div className="mini-menu-list">
         <Link to={miniHref('help')} className="mini-menu-row"><span className="mini-menu-icon"><BookOpen aria-hidden="true" /></span><span>วิธีใช้งาน Eh?Bot</span><ChevronRight aria-hidden="true" className="mini-chevron" /></Link>
-        {RECOVERY_READY && <Link to={miniHref('recovery')} className="mini-menu-row"><span className="mini-menu-icon"><CircleHelp aria-hidden="true" /></span><span>เผลอทำตามข้อความน่าสงสัย</span><ChevronRight aria-hidden="true" className="mini-chevron" /></Link>}
         <details className="mini-menu-details"><summary className="mini-menu-row"><span className="mini-menu-icon"><Info aria-hidden="true" /></span><span>เกี่ยวกับ Eh?Bot</span><ChevronRight aria-hidden="true" className="mini-chevron" /></summary>
           <p>ช่วยดูสัญญาณเสี่ยงเพื่อประกอบการตัดสินใจ ผลอาจคลาดเคลื่อน และไม่ยืนยันตัวตนผู้ส่งหรือความปลอดภัยของเว็บไซต์</p></details>
       </div>

@@ -10,7 +10,7 @@ export default function MiniLiveDetail() {
   const lessonBase = session.miniHref('lessons');
   const lessonHref = lessonBase + (lessonBase.includes('?') ? '&' : '?') + `topic=${session.detail?.lessonId || 'links'}`;
   if (session.detail) {
-    return <MiniCaseDetail detectionCase={session.detail} learningHref={lessonHref} recoveryHref={session.miniHref('recovery')} />;
+    return <MiniCaseDetail detectionCase={session.detail} learningHref={lessonHref} />;
   }
   // ยังโหลดอยู่ ต้องล็อกอิน หรือเปิดไม่ได้: บอกสถานะ พร้อมทางกลับแชตและไปประวัติของตนเอง
   return <>

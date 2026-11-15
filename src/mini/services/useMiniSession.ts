@@ -133,8 +133,8 @@ export function useMiniSession(live: boolean, caseId: string) {
   function returnToLine() { if (canReturnToLine) view.liff?.closeWindow(); }
 
   // targetId: เปิดเคสที่เลือกจากรายการ; ไม่ส่ง = ใช้เคสที่กำลังเปิดอยู่
-  function miniHref(page: 'home' | 'history' | 'detail' | 'lessons' | 'settings' | 'help' | 'recovery', targetId?: string) {
-    if (!live) return { home: '/mini', history: '/mini/history', detail: '/mini', lessons: '/mini/lessons', settings: '/mini/settings', help: '/mini/help', recovery: '/mini/recovery' }[page];
+  function miniHref(page: 'home' | 'history' | 'detail' | 'lessons' | 'settings' | 'help', targetId?: string) {
+    if (!live) return { home: '/mini', history: '/mini/history', detail: '/mini', lessons: '/mini/lessons', settings: '/mini/settings', help: '/mini/help' }[page];
     // หน้าแรกคือ /mini/result ที่ไม่มีรหัสเคส (มีรหัส = หน้าผลตรวจ) จึงไม่พารหัสไปด้วย
     if (page === 'home') return '/mini/result';
     const path = page === 'detail' ? '/mini/result' : `/mini/result/${page}`;
