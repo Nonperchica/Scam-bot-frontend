@@ -6,11 +6,13 @@ import MiniMascot from '../components/MiniMascot';
 import { deleteMessage, nextDeleteStep } from '../deleteFlow';
 import type { DeleteAction, DeleteState } from '../deleteFlow';
 
+// หน้าบัญชี: โปรไฟล์ LINE เมนูข้อมูล และปุ่มลบประวัติทั้งหมด (เฉพาะโหมดจริง)
 export default function MiniSettings() {
   const { live, signedIn, profile, deleteHistory, miniHref } = useOutletContext<MiniLayoutContext>();
   const [deleteState, setDeleteState] = useState<DeleteState>({ step: 'idle' });
   const send = (action: DeleteAction) => setDeleteState(current => nextDeleteStep(current, action));
 
+  // ลบจริงหลังกดยืนยันแล้ว: ส่ง start → เรียก API → ส่ง success หรือ fail
   async function confirmDelete() {
     // กดซ้ำระหว่างกำลังลบไม่เรียก API อีก (ปุ่มปิดอยู่ และ state ไม่ใช่ confirm แล้ว)
     if (deleteState.step !== 'confirm') return;

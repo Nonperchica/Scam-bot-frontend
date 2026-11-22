@@ -3,6 +3,7 @@ import { sampleCases } from '../sampleCases';
 import MiniMascot from '../components/MiniMascot';
 import MiniCaseDetail from '../components/MiniCaseDetail';
 
+// หน้าผลตรวจโหมดตัวอย่าง: หาเคสสมมติจาก :caseId ใน URL ไม่เจอบอกว่าเปิดไม่ได้
 export default function MiniDetail() {
   const { caseId } = useParams();
   const detectionCase = sampleCases.find((item) => item.id === caseId);

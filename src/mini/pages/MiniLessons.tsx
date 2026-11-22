@@ -7,6 +7,7 @@ import type { MiniLayoutContext } from '../sampleCases';
 
 const lessonIcons = { links: Link2, otp: KeyRound, prizes: Gift, urgency: Clock3, payments: Wallet, impersonation: BadgeCheck };
 
+// หน้าเรียนรู้: บทเรียนกลโกง 6 เรื่อง บทที่เลือกเก็บใน ?topic= ของ URL
 export default function MiniLessons() {
   const session = useOutletContext<MiniLayoutContext>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,11 +17,13 @@ export default function MiniLessons() {
   const caseLessonId = session.live ? session.detail?.lessonId : sourceCase?.lessonId;
   const caseLesson = lessonTopics.find(lesson => lesson.id === caseLessonId);
   const featuredLesson = caseLesson ?? lessonTopics.find(lesson => lesson.id === 'otp')!;
+  // ปิดบทที่เปิดอยู่ (ลบ topic ออกจาก URL) กลับไปรายการหัวข้อ
   function closeTopic() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('topic');
     setSearchParams(nextParams, { replace: true });
   }
+  // เปิดบท topicId; replace: true ไม่เพิ่มประวัติเบราว์เซอร์ทุกครั้งที่กด และคง case= เดิมไว้
   function selectTopic(topicId: string) {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('topic', topicId);

@@ -15,6 +15,7 @@ function miniApiBase(): string {
   return url.origin;
 }
 
+// type guard: ตรวจทุก field ของรายละเอียดเคสจาก backend ก่อนให้หน้าเว็บใช้ ผิดรูปแบบคืน false
 export function isMiniCaseData(value: unknown): value is MiniCaseData {
   if (!value || typeof value !== 'object') return false;
   const item = value as Record<string, unknown>;
@@ -37,6 +38,7 @@ export type MiniHistoryItem = Pick<DetectionCase, 'id' | 'title' | 'category' | 
 const LOGIN_EXPIRED = 'การเข้าสู่ระบบหมดอายุ กรุณาปิดหน้านี้แล้วเปิดจากปุ่มในแชต LINE ใหม่';
 const CASE_NOT_FOUND = 'เปิดผลตรวจนี้ไม่ได้ เคสอาจถูกลบ หรือไม่ใช่เคสของบัญชี LINE นี้';
 
+// type guard ของแถวประวัติ: รหัสเคสต้องเป็น hex 32 ตัว สถานะและชนิดต้องเป็นค่าที่รู้จัก
 export function isMiniHistoryItem(value: unknown): value is MiniHistoryItem {
   if (!value || typeof value !== 'object') return false;
   const item = value as Record<string, unknown>;
@@ -60,6 +62,7 @@ async function requestMiniApi(path: string, idToken: string, init: { method?: st
   }
 }
 
+// อ่าน body เป็น JSON; อ่านไม่ได้แปลงเป็นข้อความภาษาไทยแทน error ดิบ
 async function readJson(response: Response): Promise<unknown> {
   try {
     return await response.json();
@@ -68,6 +71,7 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
+// ดึงประวัติของผู้ใช้จาก GET /api/mini/history; 401 = ล็อกอินหมดอายุ
 export async function fetchMiniHistory(idToken: string, signal: AbortSignal): Promise<MiniHistoryItem[]> {
   const response = await requestMiniApi('/api/mini/history', idToken, { signal });
   if (response.status === 401) throw new Error(LOGIN_EXPIRED);
@@ -77,6 +81,7 @@ export async function fetchMiniHistory(idToken: string, signal: AbortSignal): Pr
   return Array.isArray(body?.cases) ? body.cases.filter(isMiniHistoryItem) : [];
 }
 
+// ลบประวัติทั้งหมดของผู้ใช้ด้วย DELETE /api/mini/history แล้วคืนจำนวนที่ลบ
 export async function deleteMiniHistory(idToken: string): Promise<number> {
   const response = await requestMiniApi('/api/mini/history', idToken, { method: 'DELETE' });
   if (response.status === 401) throw new Error(LOGIN_EXPIRED);
@@ -85,6 +90,7 @@ export async function deleteMiniHistory(idToken: string): Promise<number> {
   return typeof body?.deleted === 'number' ? body.deleted : 0;
 }
 
+// รอ ms มิลลิวินาที แต่หยุดทันทีถ้าคำขอถูกยกเลิก (signal abort)
 function wait(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) { reject(signal.reason); return; }

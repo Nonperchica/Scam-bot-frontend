@@ -13,6 +13,7 @@ interface SessionView {
   login?: boolean;
 }
 
+// hook กลางของ Mini App: ล็อกอิน LIFF เปิดเคสจาก ?case= โหลดประวัติและโปรไฟล์; โหมดตัวอย่าง (live=false) ไม่เรียกอะไรเลย
 export function useMiniSession(live: boolean, caseId: string) {
   const [revision, setRevision] = useState(0);
   const [state, setState] = useState<SessionView>({ caseId, loading: live });
@@ -31,6 +32,7 @@ export function useMiniSession(live: boolean, caseId: string) {
         setState({ caseId, loading: false, liff, error: 'ใช้เวลาเปิดผลนานเกินไป กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่' });
       }
     }, 30000);
+    // เปิดเคส: init LIFF → เช็กรหัสเคส → เช็กล็อกอิน → ขอ ID token → fetchMiniCase
     async function load() {
       try {
         liff = await initializeMiniLiff();
@@ -69,6 +71,7 @@ export function useMiniSession(live: boolean, caseId: string) {
   useEffect(() => {
     if (!live || !signedInLiff) return;
     const controller = new AbortController();
+    // โหลดรายการประวัติด้วย ID token ของผู้ใช้ที่ล็อกอินแล้ว
     async function loadHistory() {
       try {
         const token = signedInLiff?.getIDToken();
@@ -97,6 +100,7 @@ export function useMiniSession(live: boolean, caseId: string) {
     return () => { active = false; };
   }, [live, signedInLiff]);
 
+  // ปุ่มโหลดประวัติใหม่: เปลี่ยน historyRevision ให้ effect ประวัติรันอีกรอบ
   function reloadHistory() {
     setHistory(current => ({ ...current, loading: true, error: '' }));
     setHistoryRevision(value => value + 1);
@@ -113,11 +117,13 @@ export function useMiniSession(live: boolean, caseId: string) {
     return deleted;
   }
 
+  // ปุ่มลองเปิดเคสใหม่: เปลี่ยน revision ให้ effect เปิดเคสรันอีกรอบ
   function retry() {
     setState({ caseId, loading: true });
     setRevision(value => value + 1);
   }
 
+  // ปุ่มเข้าสู่ระบบ LINE แล้วกลับมาที่เคสเดิม
   function login() {
     try {
       const target = miniLoginTarget(window.location.href,
@@ -130,6 +136,7 @@ export function useMiniSession(live: boolean, caseId: string) {
   }
 
   const canReturnToLine = Boolean(view.liff?.isInClient());
+  // ปิด Mini App กลับไปแชต LINE (ทำได้เฉพาะเปิดในแอป LINE)
   function returnToLine() { if (canReturnToLine) view.liff?.closeWindow(); }
 
   // targetId: เปิดเคสที่เลือกจากรายการ; ไม่ส่ง = ใช้เคสที่กำลังเปิดอยู่

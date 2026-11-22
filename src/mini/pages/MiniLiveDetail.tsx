@@ -5,6 +5,7 @@ import MiniPageHeading from '../components/MiniPageHeading';
 import MiniSessionNotice from '../components/MiniSessionNotice';
 import MiniChatButton from '../components/MiniChatButton';
 
+// หน้าผลตรวจโหมดจริง: มีผลแล้วแสดง MiniCaseDetail ยังไม่มีแสดงสถานะการเปิดเคส
 export default function MiniLiveDetail() {
   const session = useOutletContext<MiniLayoutContext>();
   const lessonBase = session.miniHref('lessons');

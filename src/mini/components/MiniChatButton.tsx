@@ -2,6 +2,7 @@ import { ChevronRight } from 'lucide-react';
 import { Link, useOutletContext } from 'react-router-dom';
 import type { MiniLayoutContext } from '../sampleCases';
 
+// ปุ่มกลับแชต: โหมดจริงปิด Mini App กลับ LINE (กดได้เฉพาะเปิดในแอป LINE) โหมดตัวอย่างไปหน้าแชตสมมติ
 export default function MiniChatButton({ label = 'เปิดแชต Eh?Bot' }: { label?: string }) {
   const session = useOutletContext<MiniLayoutContext | undefined>();
   if (session?.live) {

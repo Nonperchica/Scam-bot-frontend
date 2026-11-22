@@ -106,6 +106,7 @@ export const sampleCases: DetectionCase[] = [
   },
 ];
 
+// วันที่และเวลาเต็มของเคส แบบไทย ตามเวลาไทย
 export function formatCaseTime(receivedAt: string): string {
   return new Intl.DateTimeFormat('th-TH', {
     timeZone: 'Asia/Bangkok',
@@ -114,6 +115,7 @@ export function formatCaseTime(receivedAt: string): string {
   }).format(new Date(receivedAt));
 }
 
+// วันที่แบบ YYYY-MM-DD ตามเวลาไทย (en-CA ให้รูปแบบนี้) ใช้เทียบว่าเป็นวันเดียวกันไหม
 const bangkokDay = (date: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(date);
 
 // หัวกลุ่มประวัติ: วันนี้ / เมื่อวาน / วันที่ ตามเวลาไทย

@@ -4,6 +4,7 @@ import MiniPageHeading from '../components/MiniPageHeading';
 import MiniMascot from '../components/MiniMascot';
 import { sampleCases } from '../sampleCases';
 
+// หน้าแชตตัวอย่าง (เฉพาะโหมดตัวอย่าง): จำลองผลตรวจจากเคสสมมติเคสแรก
 export default function MiniChat() {
   const exampleCase = sampleCases[0];
   return (

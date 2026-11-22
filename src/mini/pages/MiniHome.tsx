@@ -14,6 +14,7 @@ const steps = [
   { icon: Lightbulb, label: 'ดูคำแนะนำ' },
 ];
 
+// หน้าแรก: ทักทาย ปุ่มไปแชต ผลตรวจล่าสุด และวิธีใช้ 3 ขั้น
 export default function MiniHome() {
   const session = useOutletContext<MiniLayoutContext>();
   // โหมดจริงใช้ประวัติจาก Bot API เท่านั้น โหลดไม่ได้ก็ไม่แสดงเคสสมมติแทน

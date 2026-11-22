@@ -4,6 +4,7 @@ import { BookOpen, ChevronLeft, CircleHelp, History, House, UserRound } from 'lu
 import './mini.css';
 import { useMiniSession } from './services/useMiniSession';
 
+// กรอบทุกหน้า Mini App: header และแท็บล่าง 4 อัน; เรียก useMiniSession ที่นี่ที่เดียวแล้วส่งให้หน้าลูกผ่าน Outlet
 export default function MiniLayout() {
   const { pathname, search } = useLocation();
   const live = pathname === '/mini/result' || pathname.startsWith('/mini/result/');

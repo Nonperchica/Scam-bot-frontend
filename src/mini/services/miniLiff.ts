@@ -40,6 +40,7 @@ declare global {
 let sdkPromise: Promise<MiniLiff> | undefined;
 let initialization: Promise<MiniLiff> | undefined;
 
+// เลือกที่หมายหลังล็อกอิน: localhost/http เปิดผ่าน liff.line.me, https ใช้หน้าเดิมโดยเหลือแค่ case=
 export function miniLoginTarget(currentUrl: string, liffId: string, caseId: string) {
   if (!/^[0-9]+-[A-Za-z0-9]+$/.test(liffId) || (caseId && !/^[0-9a-f]{32}$/.test(caseId))) {
     throw new Error('ข้อมูลสำหรับเปิด LINE ไม่ถูกต้อง กรุณาเปิดจากปุ่มในแชตใหม่');
@@ -58,6 +59,7 @@ export function miniLoginTarget(currentUrl: string, liffId: string, caseId: stri
   return { launchLiff: false, url: current.href };
 }
 
+// โหลด LIFF SDK จาก CDN ของ LINE ครั้งเดียว (timeout 15 วิ) โหลดพังล้างค่าให้ลองใหม่ได้
 function loadLiffSdk(): Promise<MiniLiff> {
   if (window.liff) return Promise.resolve(window.liff);
   if (!sdkPromise) {
@@ -85,6 +87,7 @@ function loadLiffSdk(): Promise<MiniLiff> {
   return sdkPromise;
 }
 
+// init LIFF ครั้งเดียวทั้งแอป; LIFF ID ผิดรูปแบบหรือ init ไม่ผ่านโยน error ภาษาไทย
 export function initializeMiniLiff(): Promise<MiniLiff> {
   if (!initialization) {
     initialization = (async () => {

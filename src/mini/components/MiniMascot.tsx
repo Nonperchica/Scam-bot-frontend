@@ -19,6 +19,7 @@ const mascotImages = {
   heart: { source: heartImage, description: 'กอดหัวใจ' },
 };
 
+// รูปมาสคอตตามท่า pose พร้อม alt บอกท่าทาง; width/height กันหน้ากระตุกตอนรูปโหลด
 export default function MiniMascot({ pose, className = '' }: { pose: MascotPose; className?: string }) {
   const mascot = mascotImages[pose];
   return <img className={`mini-mascot ${className}`} src={mascot.source} alt={`Eh?Bot ${mascot.description}`} width={224} height={224} />;

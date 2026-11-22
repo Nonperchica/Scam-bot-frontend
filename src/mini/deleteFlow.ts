@@ -13,6 +13,7 @@ export type DeleteAction =
   | { type: 'success'; deleted: number }
   | { type: 'fail'; error: string };
 
+// คืนสถานะถัดไปของปุ่มลบจากสถานะเดิม + การกระทำ; การกระทำที่ผิดขั้นตอนคืนสถานะเดิม
 export function nextDeleteStep(state: DeleteState, action: DeleteAction): DeleteState {
   // ระหว่างกำลังลบ ไม่รับการกดซ้ำหรือยกเลิก กันการส่งคำขอลบสองครั้ง
   if (state.step === 'deleting') {
@@ -27,6 +28,7 @@ export function nextDeleteStep(state: DeleteState, action: DeleteAction): Delete
   return state;
 }
 
+// ข้อความใต้ปุ่มลบ: สำเร็จบอกจำนวน ล้มเหลวบอก error สถานะอื่นไม่มีข้อความ
 export function deleteMessage(state: DeleteState): string {
   if (state.step === 'done') return `ลบประวัติแล้ว ${state.deleted} รายการ`;
   if (state.step === 'error') return state.error;

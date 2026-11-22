@@ -8,13 +8,16 @@ import MiniPageHeading from '../components/MiniPageHeading';
 import MiniSessionNotice from '../components/MiniSessionNotice';
 import type { MiniHistoryItem } from '../services/miniApi';
 
+// เวลาแบบไทย เช่น 10:42 ตามเขตเวลา Asia/Bangkok
 const bangkokTime = (iso: string) => new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', timeStyle: 'short' }).format(new Date(iso));
 
+// ป้ายชนิดเคสในแถวประวัติ: รูปภาพ / ลิงก์ / ข้อความ
 function typeLabel(item: MiniHistoryItem, image: boolean): string {
   if (image) return 'รูปภาพ';
   return item.category === 'link' ? 'ลิงก์' : 'ข้อความ';
 }
 
+// หน้าประวัติ: ค้นหา กรองสถานะ และจัดกลุ่มเคสตามวัน กดแถวเพื่อเปิดผลตรวจ
 export default function MiniHistory() {
   const session = useOutletContext<MiniLayoutContext>();
   const [searchText, setSearchText] = useState('');
@@ -37,6 +40,7 @@ export default function MiniHistory() {
   }
   const busy = session.loading || session.needsLogin || session.historyLoading || Boolean(session.historyError) || Boolean(session.error);
 
+  // ล้างคำค้นและตัวกรอง กลับไปแสดงทุกรายการ
   function clearFilters() {
     setSearchText('');
     setSelectedStatus('all');

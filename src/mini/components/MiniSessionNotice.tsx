@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import type { MiniLayoutContext } from '../sampleCases';
 import MiniMascot from './MiniMascot';
 
+// กล่องสถานะการเปิดเคส: กำลังโหลด / ต้องล็อกอิน / error; สถานะปกติไม่แสดงอะไร
 export default function MiniSessionNotice() {
   const session = useOutletContext<MiniLayoutContext>();
   if (!session.loading && !session.error && !session.needsLogin) return null;
