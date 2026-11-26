@@ -3,6 +3,7 @@ export interface MiniLiff {
   isLoggedIn(): boolean;
   getIDToken(): string | null;
   login(options: { redirectUri: string }): void;
+  logout(): void;
   isInClient(): boolean;
   closeWindow(): void;
   getProfile(): Promise<unknown>;

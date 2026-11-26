@@ -35,7 +35,9 @@ export function isMiniCaseData(value: unknown): value is MiniCaseData {
 
 export type MiniHistoryItem = Pick<DetectionCase, 'id' | 'title' | 'category' | 'receivedAt' | 'status'>;
 
-const LOGIN_EXPIRED = 'การเข้าสู่ระบบหมดอายุ กรุณาปิดหน้านี้แล้วเปิดจากปุ่มในแชต LINE ใหม่';
+export const LOGIN_EXPIRED = 'การเข้าสู่ระบบหมดอายุ กรุณากดปุ่มเข้าสู่ระบบใหม่';
+// ป้ายปุ่มใต้ error: ล็อกอินหมดอายุต้องล็อกอินใหม่ ลองซ้ำด้วย token เดิมไม่ช่วย
+export const retryLabel = (error: string) => error === LOGIN_EXPIRED ? 'เข้าสู่ระบบใหม่' : 'ลองอีกครั้ง';
 const CASE_NOT_FOUND = 'เปิดผลตรวจนี้ไม่ได้ เคสอาจถูกลบ หรือไม่ใช่เคสของบัญชี LINE นี้';
 
 // type guard ของแถวประวัติ: รหัสเคสต้องเป็น hex 32 ตัว สถานะและชนิดต้องเป็นค่าที่รู้จัก

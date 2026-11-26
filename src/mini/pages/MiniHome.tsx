@@ -6,6 +6,7 @@ import type { MascotPose } from '../components/MiniMascot';
 import MiniMascot from '../components/MiniMascot';
 import MiniChatButton from '../components/MiniChatButton';
 import MiniSessionNotice from '../components/MiniSessionNotice';
+import { retryLabel } from '../services/miniApi';
 
 const statusMascots: Record<DetectionStatus, MascotPose> = { risk_found: 'alert', no_risk_found: 'calm', uncertain: 'inspect' };
 const steps = [
@@ -35,7 +36,7 @@ export default function MiniHome() {
         {session.historyLoading && <p className="mini-note" role="status">กำลังโหลดผลตรวจล่าสุด…</p>}
         {session.historyError && <>
           <p className="mini-session-error" role="alert">{session.historyError}</p>
-          <button type="button" className="mini-secondary-button" onClick={session.reloadHistory}>ลองอีกครั้ง</button>
+          <button type="button" className="mini-secondary-button" onClick={session.reloadHistory}>{retryLabel(session.historyError)}</button>
         </>}
         {latest && latestTitle && <>
           <Link className={`mini-latest ${latest.status}`} to={session.live ? session.miniHref('detail', latest.id) : `/mini/cases/${latest.id}`}>

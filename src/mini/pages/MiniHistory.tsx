@@ -6,6 +6,7 @@ import type { DetectionStatus, MiniLayoutContext } from '../sampleCases';
 import MiniMascot from '../components/MiniMascot';
 import MiniPageHeading from '../components/MiniPageHeading';
 import MiniSessionNotice from '../components/MiniSessionNotice';
+import { retryLabel } from '../services/miniApi';
 import type { MiniHistoryItem } from '../services/miniApi';
 
 // เวลาแบบไทย เช่น 10:42 ตามเขตเวลา Asia/Bangkok
@@ -54,7 +55,7 @@ export default function MiniHistory() {
         {session.historyLoading && <p className="mini-note" role="status">กำลังโหลดประวัติ…</p>}
         {session.live && session.historyError && <section className="mini-card">
           <p className="mini-session-error" role="alert">{session.historyError}</p>
-          <button type="button" className="mini-secondary-button" onClick={session.reloadHistory}>ลองอีกครั้ง</button>
+          <button type="button" className="mini-secondary-button" onClick={session.reloadHistory}>{retryLabel(session.historyError)}</button>
         </section>}
         {/* มีเคสไม่เกินหนึ่งรายการ ค้นหาหรือกรองไปก็ไม่ได้อะไร จึงซ่อนไว้ให้หน้าสั้นลง */}
         {showFilters && <>

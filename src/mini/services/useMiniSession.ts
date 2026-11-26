@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { deleteMiniHistory, fetchMiniCase, fetchMiniHistory } from './miniApi';
+import { LOGIN_EXPIRED, deleteMiniHistory, fetchMiniCase, fetchMiniHistory } from './miniApi';
 import type { MiniCaseData, MiniHistoryItem } from './miniApi';
 import { initializeMiniLiff, miniLoginTarget, readLineProfile } from './miniLiff';
 import type { LineProfile, MiniLiff } from './miniLiff';
@@ -102,6 +102,7 @@ export function useMiniSession(live: boolean, caseId: string) {
 
   // ปุ่มโหลดประวัติใหม่: เปลี่ยน historyRevision ให้ effect ประวัติรันอีกรอบ
   function reloadHistory() {
+    if (history.error === LOGIN_EXPIRED) { renewLogin(); return; }
     setHistory(current => ({ ...current, loading: true, error: '' }));
     setHistoryRevision(value => value + 1);
   }
@@ -119,6 +120,7 @@ export function useMiniSession(live: boolean, caseId: string) {
 
   // ปุ่มลองเปิดเคสใหม่: เปลี่ยน revision ให้ effect เปิดเคสรันอีกรอบ
   function retry() {
+    if (view.error === LOGIN_EXPIRED) { renewLogin(); return; }
     setState({ caseId, loading: true });
     setRevision(value => value + 1);
   }
@@ -133,6 +135,14 @@ export function useMiniSession(live: boolean, caseId: string) {
     } catch {
       setState({ caseId, loading: false, liff: view.liff, error: 'เปิด LINE ไม่สำเร็จ กรุณาเปิดจากปุ่มในแชตเดิม' });
     }
+  }
+
+  // token หมดอายุแต่ isLoggedIn() ยังเป็น true: ต้อง logout ล้าง token เก่าก่อน
+  // ในแอป LINE ใช้ liff.login() ไม่ได้ จึงโหลดหน้าใหม่ให้ init ออก token ให้; ผู้ใช้กดเองเท่านั้น จึงไม่วนซ้ำ
+  function renewLogin() {
+    view.liff?.logout();
+    if (view.liff?.isInClient()) window.location.reload();
+    else login();
   }
 
   const canReturnToLine = Boolean(view.liff?.isInClient());

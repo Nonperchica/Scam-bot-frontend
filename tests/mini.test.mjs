@@ -482,3 +482,10 @@ test('เคสเปิดไม่ได้พาไปประวัติ�
   assert.match(markup, /href="\/mini\/result\/history"[^>]*>ไปประวัติของฉัน/);
   assert.doesNotMatch(markup, new RegExp(caseId));
 });
+
+test('ล็อกอินหมดอายุเปลี่ยนปุ่มเป็นเข้าสู่ระบบใหม่ error อื่นยังเป็นลองอีกครั้ง', () => {
+  for (const [error, label] of [[api.LOGIN_EXPIRED, 'เข้าสู่ระบบใหม่'], ['ระบบยังเปิดผลตรวจไม่ได้', 'ลองอีกครั้ง']]) {
+    const markup = renderWithContext(MiniSessionNotice, { loading: false, error, needsLogin: false, retry: () => {} });
+    assert.match(markup, new RegExp(`</svg>${label}</button>`));
+  }
+});
